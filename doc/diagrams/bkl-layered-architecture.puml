@@ -1,0 +1,78 @@
+@startuml
+!pragma layout smetana
+title BKL Layered Architecture
+
+skinparam packageStyle rectangle
+skinparam shadowing false
+left to right direction
+
+package "Interfaces" {
+  component "CLI\ninterfaces/cli/main.py" as CLI
+  component "HTTP\ninterfaces/http/main.py" as HTTP
+  component "SDK / Python Caller" as SDK
+}
+
+package "Facade" {
+  component "SkillEngine\nengine.py" as Engine
+}
+
+package "Application" {
+  component "RunSkillUseCase" as RunSkill
+  component "HandleAgentMessageUseCase" as ChatUseCase
+  component "AgentLoop" as AgentLoop
+  component "SkillRuntime" as SkillRuntime
+  component "ToolExecutor" as ToolExecutor
+  component "ports.py\nProtocol contracts" as Ports
+}
+
+package "Domain" {
+  component "Skill" as Skill
+  component "Tool" as Tool
+  component "RunResult / Artifact / TraceEvent" as RunModels
+  component "AgentSession / AgentResponse" as AgentModels
+  component "PolicyDecision" as Policy
+}
+
+package "Infrastructure" {
+  component "InMemorySkillRegistry" as SkillRegistry
+  component "InMemoryToolRegistry" as ToolRegistry
+  component "load_skill" as SkillLoader
+  component "load_tool" as ToolLoader
+  component "ModelRouter" as ModelRouter
+  component "Model Providers\nMock / OpenAI / Anthropic" as ModelProviders
+  component "PythonToolRunner / ApiToolRunner" as ToolRunners
+  component "RunStore / TraceStore / ArtifactStore / CatalogStore" as Stores
+}
+
+CLI --> RunSkill
+HTTP --> RunSkill
+SDK --> Engine
+
+CLI --> ChatUseCase
+HTTP --> ChatUseCase
+
+RunSkill --> Engine
+ChatUseCase --> AgentLoop
+AgentLoop --> Engine
+
+Engine --> SkillRuntime
+SkillRuntime --> Ports
+ToolExecutor --> Ports
+
+Ports --> SkillRegistry
+Ports --> ToolRegistry
+Ports --> ModelRouter
+Ports --> ToolRunners
+Ports --> Stores
+
+SkillRegistry --> SkillLoader
+ToolRegistry --> ToolLoader
+ModelRouter --> ModelProviders
+
+SkillRuntime --> Skill
+SkillRuntime --> Tool
+SkillRuntime --> RunModels
+AgentLoop --> AgentModels
+ToolExecutor --> Policy
+
+@enduml

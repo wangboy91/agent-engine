@@ -52,7 +52,7 @@ bkl_engine/engine.py
   SkillEngine facade，统一 CLI/API/SDK 的运行入口。
 
 bkl_engine/application/skill/ and bkl_engine/application/execution/
-  Skill registry / runtime，支持 SKILL.md + skill.config.json 的执行契约。
+  Skill registry / runtime，支持 SKILL.md + bkl.skill.json 的执行契约。
 
 bkl_engine/application/tool/
   Tool registry / executor，支持 python 和 api tool 的受控执行入口。
@@ -604,7 +604,7 @@ Trace 不是只给开发者看的日志，它是未来 UI 调用链、失败诊�
 Discover
   -> Download / Clone
   -> Verify manifest
-  -> Validate SKILL.md and skill.config.json
+  -> Validate SKILL.md and bkl.skill.json
   -> Validate schemas
   -> Resolve Tool dependencies
   -> Show permissions

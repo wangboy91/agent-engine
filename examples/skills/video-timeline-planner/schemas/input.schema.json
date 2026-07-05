@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["script_segments", "storyboard", "asset_manifest"],
+  "additionalProperties": true,
+  "properties": {
+    "script_segments": {
+      "type": "array"
+    },
+    "storyboard": {
+      "type": "object"
+    },
+    "asset_manifest": {
+      "type": "object"
+    }
+  }
+}

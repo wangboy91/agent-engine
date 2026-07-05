@@ -1,0 +1,20 @@
+[
+  {
+    "input": {
+      "content_brief": {
+        "topic": "AI Agent 内容生产"
+      }
+    },
+    "output": {
+      "hook_plan": {
+        "hooks": [
+          "很多人做 AI 内容，第一步就错了。",
+          "你以为靠工具，其实靠流程。",
+          "AI 内容稳定产出，要先搭链路。"
+        ],
+        "best_hook": "很多人做 AI 内容，第一步就错了。",
+        "reason": "有冲突感。"
+      }
+    }
+  }
+]

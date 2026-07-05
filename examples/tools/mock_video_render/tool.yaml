@@ -1,0 +1,17 @@
+id: mock_video_render
+type: python
+name: Mock Video Render
+description: Render storyboard prompts and timeline into a local mock video artifact.
+entry: main.py
+input_schema: input.schema.json
+output_schema: output.schema.json
+
+runtime:
+  timeout_seconds: 120
+  memory_mb: 512
+  network: false
+  filesystem:
+    read:
+      - workspace
+    write:
+      - artifacts

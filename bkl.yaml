@@ -8,9 +8,13 @@ models:
       base_url: ${OPENAI_COMPATIBLE_BASE_URL}
       api_key_env: OPENAI_AUTH_TOKEN
       model: ${OPENAI_MODEL}
+      timeout_seconds: 180
+      max_tokens: 16000
 
     xfyun_anthropic:
       protocol: anthropic
       base_url: ${ANTHROPIC_BASE_URL}
       api_key_env: ANTHROPIC_AUTH_TOKEN
       model: ${ANTHROPIC_MODEL}
+      timeout_seconds: 180
+      max_tokens: 16000

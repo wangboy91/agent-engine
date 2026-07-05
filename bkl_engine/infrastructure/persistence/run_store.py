@@ -1,7 +1,17 @@
-"""Repository primitives."""
+"""Run store primitives."""
+
+import json
+from pathlib import Path
+
+from pydantic import BaseModel, Field, ValidationError
 
 from bkl_engine.domain.errors import BklEngineError
 from bkl_engine.domain.execution import RunResult
+
+
+class RunDocument(BaseModel):
+    version: int = 1
+    runs: dict[str, RunResult] = Field(default_factory=dict)
 
 
 class InMemoryRunStore:
@@ -20,3 +30,41 @@ class InMemoryRunStore:
 
     def list_runs(self) -> list[RunResult]:
         return list(self._runs.values())
+
+
+class JsonRunStore(InMemoryRunStore):
+    def __init__(self, path: str | Path) -> None:
+        self.path = Path(path)
+        super().__init__()
+        self._load_into_memory()
+
+    def save(self, run: RunResult) -> RunResult:
+        saved = super().save(run)
+        self._save()
+        return saved
+
+    def _load_into_memory(self) -> None:
+        if not self.path.exists():
+            return
+        try:
+            raw = json.loads(self.path.read_text(encoding="utf-8"))
+            document = RunDocument.model_validate(raw)
+        except json.JSONDecodeError as exc:
+            raise BklEngineError(
+                "RUN_STORE_INVALID",
+                f"Invalid run store JSON: {self.path}",
+            ) from exc
+        except ValidationError as exc:
+            raise BklEngineError(
+                "RUN_STORE_INVALID",
+                f"Invalid run store shape: {self.path}",
+            ) from exc
+        self._runs = dict(document.runs)
+
+    def _save(self) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        document = RunDocument(runs=dict(self._runs))
+        self.path.write_text(
+            json.dumps(document.model_dump(mode="json"), ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )

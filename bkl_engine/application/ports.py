@@ -3,11 +3,13 @@
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
+from bkl_engine.domain.agent import AgentMessage, AgentSession, AgentTurn
 from bkl_engine.domain.execution import Artifact, ArtifactType, RunContext, RunResult, TraceEvent
 from bkl_engine.domain.model import ModelResponse
 from bkl_engine.domain.policy import PolicyDecision
 from bkl_engine.domain.skill import Skill
 from bkl_engine.domain.tool import Tool, ToolExecutionContext, ToolExecutionResult
+from bkl_engine.domain.workspace import Identity, Workspace, WorkspaceSkill
 
 
 @runtime_checkable
@@ -100,6 +102,14 @@ class AgentRuntimePort(SkillRunnerPort, Protocol):
     def tool_registry(self) -> ToolRegistryPort:
         ...
 
+    @property
+    def session_store(self) -> "AgentSessionStorePort":
+        ...
+
+    @property
+    def workspace_store(self) -> "WorkspaceStorePort":
+        ...
+
 
 @runtime_checkable
 class RunStorePort(Protocol):
@@ -110,6 +120,109 @@ class RunStorePort(Protocol):
         ...
 
     def list_runs(self) -> list[RunResult]:
+        ...
+
+
+@runtime_checkable
+class AgentSessionStorePort(Protocol):
+    def get(self, session_id: str) -> AgentSession:
+        ...
+
+    def list_sessions(
+        self,
+        workspace_id: str | None = None,
+        identity_id: str | None = None,
+    ) -> list[AgentSession]:
+        ...
+
+    def ensure_session(
+        self,
+        session_id: str,
+        workspace_id: str | None = None,
+        identity_id: str | None = None,
+        user_id: str | None = None,
+    ) -> AgentSession:
+        ...
+
+    def append_message(self, session_id: str, message: AgentMessage) -> AgentSession:
+        ...
+
+    def append_turn(self, session_id: str, turn: AgentTurn) -> AgentSession:
+        ...
+
+
+@runtime_checkable
+class WorkspaceStorePort(Protocol):
+    def create_workspace(
+        self,
+        workspace_id: str,
+        name: str,
+        description: str | None = None,
+    ) -> Workspace:
+        ...
+
+    def get_workspace(self, workspace_id: str) -> Workspace:
+        ...
+
+    def list_workspaces(self) -> list[Workspace]:
+        ...
+
+    def install_skill(
+        self,
+        workspace_id: str,
+        skill_id: str,
+        display_name: str | None = None,
+        enabled: bool = True,
+    ) -> WorkspaceSkill:
+        ...
+
+    def set_skill_enabled(
+        self,
+        workspace_id: str,
+        skill_id: str,
+        enabled: bool,
+    ) -> WorkspaceSkill:
+        ...
+
+    def get_workspace_skill(self, workspace_id: str, skill_id: str) -> WorkspaceSkill:
+        ...
+
+    def list_workspace_skills(
+        self,
+        workspace_id: str,
+        enabled_only: bool = False,
+    ) -> list[WorkspaceSkill]:
+        ...
+
+    def list_workspace_skill_ids(
+        self,
+        workspace_id: str,
+        enabled_only: bool = True,
+    ) -> list[str]:
+        ...
+
+    def create_identity(
+        self,
+        workspace_id: str,
+        identity_id: str,
+        name: str,
+        description: str | None = None,
+    ) -> Identity:
+        ...
+
+    def get_identity(self, workspace_id: str, identity_id: str) -> Identity:
+        ...
+
+    def list_identities(self, workspace_id: str) -> list[Identity]:
+        ...
+
+    def bind_skill(self, workspace_id: str, identity_id: str, skill_id: str) -> Identity:
+        ...
+
+    def list_identity_skill_ids(self, workspace_id: str, identity_id: str) -> list[str]:
+        ...
+
+    def is_skill_allowed(self, workspace_id: str, identity_id: str, skill_id: str) -> bool:
         ...
 
 

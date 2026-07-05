@@ -56,11 +56,11 @@ caller
 入口示例：
 
 ```bash
-bkl skill run talking_video input.json --output json
+bkl skill run talking-video input.json --output json
 ```
 
 ```http
-POST /skills/talking_video/runs
+POST /skills/talking-video/runs
 ```
 
 这个模式要求稳定、可预测、易测试。生产 API 默认应该优先使用它。
@@ -203,7 +203,7 @@ allow_direct_tool_call: false
 
 ```json
 {
-  "skill_id": "wangbudong_experiment",
+  "skill_id": "wangbudong-experiment",
   "input": {
     "topic": "鸡蛋为什么会浮起来"
   }
@@ -219,7 +219,7 @@ Agent 不需要猜测，只需要校验输入并执行。
 ```yaml
 scenes:
   wangbudong_experiment_writer:
-    skill_id: wangbudong_experiment
+    skill_id: wangbudong-experiment
     title: 王不懂小实验内容生成
     defaults:
       platform: xiaohongshu
@@ -255,7 +255,7 @@ Router 输出：
 ```json
 {
   "intent": "run_skill",
-  "skill_id": "wangbudong_experiment",
+  "skill_id": "wangbudong-experiment",
   "confidence": 0.91,
   "input_draft": {
     "topic": "鸡蛋为什么会浮起来"

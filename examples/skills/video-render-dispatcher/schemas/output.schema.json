@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["render_job", "video_draft"],
+  "additionalProperties": true,
+  "properties": {
+    "render_job": {
+      "type": "object",
+      "required": ["render_job_id", "status"],
+      "additionalProperties": true,
+      "properties": {
+        "render_job_id": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "video_path": {
+          "type": "string"
+        },
+        "manifest_path": {
+          "type": "string"
+        },
+        "generated_assets": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "video_draft": {
+      "type": "object",
+      "required": ["status", "video_path", "manifest_path"],
+      "additionalProperties": true,
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "render_job_id": {
+          "type": "string"
+        },
+        "video_path": {
+          "type": "string"
+        },
+        "manifest_path": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

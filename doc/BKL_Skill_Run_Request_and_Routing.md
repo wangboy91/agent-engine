@@ -12,7 +12,7 @@
 
 ```text
 SKILL.md
-skill.config.json
+bkl.skill.json
 input.schema.json
 output.schema.json
 examples.json
@@ -24,7 +24,7 @@ examples.json
 SKILL.md
   给模型看的说明书：什么时候使用、如何执行、注意事项、输出要求。
 
-skill.config.json
+bkl.skill.json
   给引擎看的运行配置：skill id、schema 文件、允许调用的 tools、模型 profile、limits。
 
 input.schema.json
@@ -37,13 +37,13 @@ examples.json
   示例输入输出，用于测试、展示、未来 few-shot 或评测。
 ```
 
-## 2. 当前 talking_video 示例
+## 2. 当前 talking-video 示例
 
-`examples/skills/talking_video/skill.config.json` 里声明：
+`examples/skills/talking-video/bkl.skill.json` 里声明：
 
 ```json
 {
-  "id": "talking_video",
+  "id": "talking-video",
   "input_schema": "input.schema.json",
   "output_schema": "output.schema.json",
   "tools": {
@@ -57,7 +57,7 @@ examples.json
 所以这个 Skill 的运行 ID 是：
 
 ```text
-talking_video
+talking-video
 ```
 
 它的入参来自 `input.schema.json`：
@@ -128,7 +128,7 @@ talking_video
 CLI 当前是显式指定 Skill：
 
 ```bash
-bkl skill run talking_video examples/inputs/talking_video_input.json \
+bkl skill run talking-video examples/inputs/talking-video-input.json \
   --skills-dir examples/skills \
   --tools-dir examples/tools \
   --output json
@@ -137,11 +137,11 @@ bkl skill run talking_video examples/inputs/talking_video_input.json \
 这里的含义：
 
 ```text
-talking_video
+talking-video
   要运行的 skill_id。
 
-examples/inputs/talking_video_input.json
-  请求入参，必须符合 talking_video/input.schema.json。
+examples/inputs/talking-video-input.json
+  请求入参，必须符合 talking-video/input.schema.json。
 
 --skills-dir
   从哪里扫描 Skill 包。
@@ -158,7 +158,7 @@ examples/inputs/talking_video_input.json
 HTTP 当前也是显式指定 Skill：
 
 ```http
-POST /skills/talking_video/runs
+POST /skills/talking-video/runs
 ```
 
 请求体：
@@ -174,7 +174,7 @@ POST /skills/talking_video/runs
 }
 ```
 
-这里的 `input` 必须符合 `talking_video/input.schema.json`。
+这里的 `input` 必须符合 `talking-video/input.schema.json`。
 
 响应是统一的 `RunResult`：
 
@@ -182,7 +182,7 @@ POST /skills/talking_video/runs
 {
   "run_id": "run_xxx",
   "status": "succeeded",
-  "skill_id": "talking_video",
+  "skill_id": "talking-video",
   "output": {
     "script": "...",
     "titles": ["..."],
@@ -235,7 +235,7 @@ POST /skills/talking_video/runs
 
 ```text
 用户已经选择“口播视频生成”
-后端直接运行 skill_id = talking_video
+后端直接运行 skill_id = talking-video
 ```
 
 优点：
@@ -256,7 +256,7 @@ POST /skills/talking_video/runs
 ```text
 应用：本地口播视频软件
 页面：生成口播视频
-Skill：talking_video
+Skill：talking-video
 
 应用：OpenAPI Tool 创建器
 页面：导入 OpenAPI
@@ -306,7 +306,7 @@ SKILL.md 摘要
 
 ```json
 {
-  "skill_id": "talking_video",
+  "skill_id": "talking-video",
   "confidence": 0.92,
   "input": {
     "topic": "程序员护眼台灯",
@@ -322,7 +322,7 @@ SKILL.md 摘要
 
 ```text
 我找到两个可能的 Skill：
-1. talking_video：生成口播视频脚本和字幕
+1. talking-video：生成口播视频脚本和字幕
 2. title_generator：只生成标题
 
 你要生成完整口播视频，还是只要标题？

@@ -1,0 +1,32 @@
+[
+  {
+    "input": {
+      "script_segments": [
+        {
+          "id": "s1",
+          "duration": 5,
+          "screen_text": "第一步就错了"
+        }
+      ],
+      "style_bible": {
+        "visual_style": "真实口播 + 信息图"
+      }
+    },
+    "output": {
+      "storyboard": {
+        "shots": [
+          {
+            "shot_id": "sh1",
+            "segment_id": "s1",
+            "duration": 5,
+            "visual_type": "keyword_card",
+            "camera": "静态关键词画面",
+            "description": "突出第一步就错了",
+            "screen_text": "第一步就错了",
+            "asset_needed": "keyword_card"
+          }
+        ]
+      }
+    }
+  }
+]

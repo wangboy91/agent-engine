@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "hookOption": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "required": ["content"],
+          "additionalProperties": true,
+          "properties": {
+            "type": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "type": "object",
+  "required": ["hook_plan"],
+  "additionalProperties": true,
+  "properties": {
+    "hook_plan": {
+      "type": "object",
+      "required": ["hooks", "best_hook", "reason"],
+      "additionalProperties": true,
+      "properties": {
+        "hooks": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "$ref": "#/$defs/hookOption"
+          }
+        },
+        "best_hook": {
+          "$ref": "#/$defs/hookOption"
+        },
+        "reason": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

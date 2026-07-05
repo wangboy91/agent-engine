@@ -1,0 +1,24 @@
+[
+  {
+    "input": {
+      "script": {
+        "full_text": "很多人做 AI 内容，第一步就错了。",
+        "estimated_duration_seconds": 60
+      }
+    },
+    "output": {
+      "script_segments": [
+        {
+          "id": "s1",
+          "order": 1,
+          "time_range": "0-5s",
+          "duration": 5,
+          "spoken_text": "很多人做 AI 内容，第一步就错了。",
+          "function": "hook",
+          "emotion": "strong",
+          "screen_text": "第一步就错了"
+        }
+      ]
+    }
+  }
+]

@@ -326,7 +326,7 @@ Skill 包加载、注册、运行。
 
 ```text
 infrastructure/package_loaders/skill_loader.py
-  读取标准 Skill 包：SKILL.md + skill.config.json + schema。
+  读取标准 Skill 包：SKILL.md + bkl.skill.json + schema。
 
 infrastructure/repositories/skill_registry.py
   内存 Skill Registry adapter。
@@ -611,8 +611,8 @@ examples/
 ### 4.1 inputs
 
 ```text
-examples/inputs/talking_video_input.json
-examples/inputs/wangbudong_experiment_input.json
+examples/inputs/talking-video-input.json
+examples/inputs/wangbudong-experiment-input.json
 examples/inputs/subtitle_input.json
 ```
 
@@ -621,16 +621,16 @@ examples/inputs/subtitle_input.json
 ### 4.2 skills
 
 ```text
-examples/skills/talking_video/
+examples/skills/talking-video/
   SKILL.md
-  skill.config.json
+  bkl.skill.json
   input.schema.json
   output.schema.json
   examples.json
 
-examples/skills/wangbudong_experiment/
+examples/skills/wangbudong-experiment/
   SKILL.md
-  skill.config.json
+  bkl.skill.json
   input.schema.json
   output.schema.json
   examples.json
@@ -723,8 +723,8 @@ DDD domain/application/infrastructure/interfaces package baseline
 Application use cases for direct Skill run and Agent message turn
 Tool policy check hook
 tool_policy_checked / tool_failed trace events
-talking_video example
-wangbudong_experiment example
+talking-video example
+wangbudong-experiment example
 ```
 
 占位或待展开：

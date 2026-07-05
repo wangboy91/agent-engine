@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["content_brief"],
+  "additionalProperties": true,
+  "properties": {
+    "content_brief": {
+      "type": "object"
+    }
+  }
+}

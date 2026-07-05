@@ -1,0 +1,16 @@
+{
+  "id": "content-brief-planner",
+  "version": "0.1.0",
+  "input_schema": "schemas/input.schema.json",
+  "output_schema": "schemas/output.schema.json",
+  "model": {
+    "profile": "mock"
+  },
+  "tools": {
+    "allow": []
+  },
+  "limits": {
+    "max_iterations": 1,
+    "max_tokens": 6000
+  }
+}

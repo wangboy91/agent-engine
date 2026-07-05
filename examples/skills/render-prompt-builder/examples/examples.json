@@ -1,0 +1,33 @@
+[
+  {
+    "input": {
+      "storyboard": {
+        "shots": [
+          {
+            "shot_id": "sh1",
+            "duration": 5,
+            "description": "关键词开场"
+          }
+        ]
+      },
+      "style_bible": {
+        "visual_style": "真实口播"
+      }
+    },
+    "output": {
+      "render_prompt_pack": {
+        "prompts": [
+          {
+            "shot_id": "sh1",
+            "provider": "seedance",
+            "type": "text_to_video",
+            "prompt": "竖屏 9:16，关键词开场",
+            "duration": 5,
+            "aspect_ratio": "9:16",
+            "resolution": "720p"
+          }
+        ]
+      }
+    }
+  }
+]

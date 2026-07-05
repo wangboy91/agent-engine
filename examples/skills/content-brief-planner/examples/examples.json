@@ -1,0 +1,24 @@
+[
+  {
+    "input": {
+      "topic": "AI Agent 内容生产",
+      "platform": "douyin",
+      "duration_seconds": 60,
+      "audience": "传统行业老板"
+    },
+    "output": {
+      "content_brief": {
+        "topic": "AI Agent 内容生产",
+        "platform": "douyin",
+        "content_type": "talking_head",
+        "duration_seconds": 60,
+        "audience": "传统行业老板",
+        "content_goal": "解释 AI Agent 如何落地内容生产",
+        "core_angle": "AI Agent 是内容生产链路，不是聊天工具",
+        "user_pain_points": ["不会拆流程"],
+        "recommended_structure": ["冲突钩子", "问题解释", "方法拆解"],
+        "delivery_format": "vertical_talking_video"
+      }
+    }
+  }
+]

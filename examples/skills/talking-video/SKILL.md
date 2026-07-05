@@ -9,7 +9,7 @@ description: Use when generating a structured talking-video draft from a topic, 
 
 ## 输入理解
 
-用户输入会符合 `input.schema.json`，至少包含：
+用户输入会符合 `schemas/input.schema.json`，至少包含：
 
 - `topic`：视频主题
 - `platform`：发布平台
@@ -23,7 +23,7 @@ description: Use when generating a structured talking-video draft from a topic, 
 
 ## 可用工具
 
-你只能调用 `skill.config.json` 的 `tools.allow` 中声明的工具。
+你只能调用 `bkl.skill.json` 的 `tools.allow` 中声明的工具。
 
 当前示例只允许调用：
 

@@ -15,7 +15,7 @@ Architecture hardening roadmap: [BKL Business Agent Base Roadmap](BKL_Business_A
 - [x] Tool loader for `tool.yaml`
 - [x] Python Tool runner with JSON stdin/stdout
 - [x] Tool registry
-- [x] standard Skill loader: `SKILL.md + skill.config.json`
+- [x] standard Skill loader: `SKILL.md + bkl.skill.json`
 - [x] Skill registry
 - [x] Skill runtime tool-calling loop
 - [x] Mock model provider
@@ -31,8 +31,8 @@ Architecture hardening roadmap: [BKL Business Agent Base Roadmap](BKL_Business_A
 - [x] `bkl init`
 - [x] `bkl serve`
 - [x] installation-form architecture document
-- [x] example Skill: `examples/skills/talking_video`
-- [x] example Skill: `examples/skills/wangbudong_experiment`
+- [x] example Skill: `examples/skills/talking-video`
+- [x] example Skill: `examples/skills/wangbudong-experiment`
 - [x] example Tool: `examples/tools/wangbudong_write_prompt_pack`
 
 ## 2. Current Iteration: Persistent Catalog
@@ -182,7 +182,7 @@ Goal: ship useful starter packs without hardcoding product-specific behavior int
 
 Acceptance:
 
-- [ ] built-in packs use the same `SKILL.md + skill.config.json` format
+- [ ] built-in packs use the same `SKILL.md + bkl.skill.json` format
 - [ ] users can disable or remove built-in packs
 - [ ] built-in packs are documented as examples, not engine internals
 

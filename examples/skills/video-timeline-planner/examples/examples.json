@@ -1,0 +1,41 @@
+[
+  {
+    "input": {
+      "script_segments": [
+        {
+          "id": "s1",
+          "duration": 5
+        }
+      ],
+      "storyboard": {
+        "shots": [
+          {
+            "shot_id": "sh1",
+            "duration": 5
+          }
+        ]
+      },
+      "asset_manifest": {
+        "assets": []
+      }
+    },
+    "output": {
+      "timeline": {
+        "duration_seconds": 5,
+        "tracks": [
+          {
+            "track": "main_video",
+            "shot_id": "sh1",
+            "start": 0,
+            "end": 5
+          }
+        ]
+      },
+      "video_draft": {
+        "status": "planned",
+        "render_strategy": "按分镜合成",
+        "deliverables": ["timeline.json"]
+      }
+    }
+  }
+]

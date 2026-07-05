@@ -6,9 +6,9 @@ from bkl_engine.infrastructure.package_loaders.skill_loader import SkillLoadErro
 
 
 def test_loads_skill_package_from_directory() -> None:
-    skill = load_skill("examples/skills/talking_video")
+    skill = load_skill("examples/skills/talking-video")
 
-    assert skill.id == "talking_video"
+    assert skill.id == "talking-video"
     assert skill.name == "talking-video"
     assert skill.model.profile == "mock"
     assert skill.allowed_tools == ["subtitle_generate_srt"]
@@ -17,9 +17,9 @@ def test_loads_skill_package_from_directory() -> None:
 
 
 def test_loads_wangbudong_experiment_skill_package() -> None:
-    skill = load_skill("examples/skills/wangbudong_experiment")
+    skill = load_skill("examples/skills/wangbudong-experiment")
 
-    assert skill.id == "wangbudong_experiment"
+    assert skill.id == "wangbudong-experiment"
     assert skill.name == "wangbudong-experiment"
     assert skill.allowed_tools == ["wangbudong_write_prompt_pack"]
     assert skill.input_schema["required"] == [
@@ -53,7 +53,7 @@ def test_standard_skill_md_requires_frontmatter(tmp_path: Path) -> None:
         load_skill(skill_dir)
 
 
-def test_standard_skill_requires_runtime_config(tmp_path: Path) -> None:
+def test_standard_skill_without_bkl_sidecar_loads_with_default_contract(tmp_path: Path) -> None:
     skill_dir = tmp_path / "missing_runtime_config"
     skill_dir.mkdir()
     (skill_dir / "SKILL.md").write_text(
@@ -71,8 +71,12 @@ def test_standard_skill_requires_runtime_config(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    with pytest.raises(SkillLoadError, match="skill.config.json"):
-        load_skill(skill_dir)
+    skill = load_skill(skill_dir)
+
+    assert skill.id == "demo-skill"
+    assert skill.allowed_tools == []
+    assert skill.input_schema["properties"]["user_input"]["type"] == "string"
+    assert skill.output_schema["additionalProperties"] is True
 
 
 def test_standard_skill_rejects_bkl_frontmatter_extension(tmp_path: Path) -> None:
@@ -86,7 +90,7 @@ def test_standard_skill_rejects_bkl_frontmatter_extension(tmp_path: Path) -> Non
         encoding="utf-8",
     )
 
-    with pytest.raises(SkillLoadError, match="skill.config.json"):
+    with pytest.raises(SkillLoadError, match="bkl.skill.json"):
         load_skill(skill_dir)
 
 
@@ -97,11 +101,47 @@ def test_skill_loader_rejects_non_standard_skill_packages(tmp_path: Path) -> Non
         load_skill(skill_dir)
 
 
-def test_skill_loader_rejects_empty_allowed_tools(tmp_path: Path) -> None:
+def test_skill_loader_allows_model_only_skill(tmp_path: Path) -> None:
     skill_dir = _write_standard_skill(tmp_path, allowed_tools=[])
 
-    with pytest.raises(SkillLoadError, match="at least one allowed tool"):
-        load_skill(skill_dir)
+    skill = load_skill(skill_dir)
+
+    assert skill.allowed_tools == []
+    assert skill.workflow is None
+
+
+def test_loads_workflow_skill_package() -> None:
+    skill = load_skill("examples/skills/content-video-workflow")
+
+    assert skill.id == "content-video-workflow"
+    assert skill.allowed_tools == []
+    assert skill.workflow is not None
+    assert skill.workflow.max_parallel_steps == 2
+    assert [step.skill_id for step in skill.workflow.steps] == [
+        "content-brief-planner",
+        "hook-plan-generator",
+        "style-bible-planner",
+        "talking-script-writer",
+        "script-segmenter",
+        "storyboard-designer",
+        "render-prompt-builder",
+        "asset-manifest-builder",
+        "video-timeline-planner",
+        "video-render-dispatcher",
+        "content-review-reporter",
+    ]
+    assert skill.workflow.steps[1].depends_on == ["content_brief"]
+    assert skill.workflow.steps[2].depends_on == ["content_brief"]
+    assert skill.workflow.steps[-1].depends_on == ["render_job"]
+    assert skill.workflow.output_artifact == "content-video-workflow.json"
+
+
+def test_loads_direct_tool_skill_execution_config() -> None:
+    skill = load_skill("examples/skills/video-render-dispatcher")
+
+    assert skill.execution.type == "direct_tool"
+    assert skill.execution.tool_id == "mock_video_render"
+    assert skill.execution.output_mapping["render_job.render_job_id"] == "render_job_id"
 
 
 def _write_non_standard_skill(tmp_path: Path) -> Path:
@@ -158,14 +198,16 @@ def _write_standard_skill(
         ),
         encoding="utf-8",
     )
-    (skill_dir / "skill.config.json").write_text(
+    schemas_dir = skill_dir / "schemas"
+    schemas_dir.mkdir()
+    (skill_dir / "bkl.skill.json").write_text(
         "\n".join(
             [
                 "{",
                 '  "id": "demo_skill",',
                 '  "version": "0.2.0",',
-                '  "input_schema": "input.schema.json",',
-                '  "output_schema": "output.schema.json",',
+                '  "input_schema": "schemas/input.schema.json",',
+                '  "output_schema": "schemas/output.schema.json",',
                 '  "model": {',
                 '    "profile": "mock"',
                 "  },",
@@ -177,6 +219,6 @@ def _write_standard_skill(
         ),
         encoding="utf-8",
     )
-    (skill_dir / "input.schema.json").write_text('{"type": "object"}', encoding="utf-8")
-    (skill_dir / "output.schema.json").write_text('{"type": "object"}', encoding="utf-8")
+    (schemas_dir / "input.schema.json").write_text('{"type": "object"}', encoding="utf-8")
+    (schemas_dir / "output.schema.json").write_text('{"type": "object"}', encoding="utf-8")
     return skill_dir

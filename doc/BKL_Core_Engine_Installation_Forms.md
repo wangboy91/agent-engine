@@ -148,13 +148,13 @@ Only one Skill package format is supported:
 
 ```text
 SKILL.md
-skill.config.json
+bkl.skill.json
 input.schema.json
 output.schema.json
 examples.json
 ```
 
-`SKILL.md` contains standard Skill metadata and Markdown instructions. BKL runtime config belongs in `skill.config.json`.
+`SKILL.md` contains standard Skill metadata and Markdown instructions. BKL runtime config belongs in `bkl.skill.json`.
 
 ### Tool Package
 

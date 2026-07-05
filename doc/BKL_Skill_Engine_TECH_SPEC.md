@@ -227,7 +227,7 @@ Engine 需要同时支持两种调用方式。
 适合 SaaS、私有部署、多项目共享。
 
 ```http
-POST http://engine:8000/skills/talking_video/runs
+POST http://engine:8000/skills/talking-video/runs
 ```
 
 ### 7.2 作为 Python SDK 嵌入
@@ -240,7 +240,7 @@ from bkl_engine import SkillEngine
 engine = SkillEngine.load("./config")
 
 result = await engine.run_skill(
-    "talking_video",
+    "talking-video",
     {
         "topic": "适合程序员的护眼台灯",
         "platform": "xiaohongshu"
@@ -327,7 +327,7 @@ Redis / Queue
 ```text
 加载 Skill
 校验 SKILL.md frontmatter
-校验 skill.config.json
+校验 bkl.skill.json
 校验 input_schema
 校验 output_schema
 管理 Skill 版本
@@ -620,7 +620,7 @@ GET    /artifacts/{artifact_id}
 ## 11. 运行 Skill 请求示例
 
 ```http
-POST /skills/talking_video/runs
+POST /skills/talking-video/runs
 ```
 
 请求：
@@ -782,15 +782,15 @@ Skill 目录结构：
 
 ```text
 skills/
-  talking_video/
+  talking-video/
     SKILL.md
-    skill.config.json
+    bkl.skill.json
     input.schema.json
     output.schema.json
     examples.json
 ```
 
-第一版采用行业通用 Skill 形态：每个 Skill 包必须包含标准 `SKILL.md`，并通过 BKL 专用的 `skill.config.json` 描述运行时配置。
+第一版采用行业通用 Skill 形态：每个 Skill 包必须包含标准 `SKILL.md`，并通过 BKL 专用的 `bkl.skill.json` 描述运行时配置。
 
 `SKILL.md` 由两部分组成：
 
@@ -806,7 +806,7 @@ name
 description
 ```
 
-`SKILL.md` 不允许写入 BKL Engine 私有运行时字段。schema、tools、model、limits 等引擎配置统一放在同目录的 `skill.config.json`，避免污染标准 Skill 元数据和 Markdown instructions。
+`SKILL.md` 不允许写入 BKL Engine 私有运行时字段。schema、tools、model、limits 等引擎配置统一放在同目录的 `bkl.skill.json`，避免污染标准 Skill 元数据和 Markdown instructions。
 
 ### 14.1 SKILL.md 示例
 
@@ -838,11 +838,11 @@ description: Use when generating a structured talking-video draft from a topic, 
 {{input}}
 ```
 
-### 14.2 skill.config.json 示例
+### 14.2 bkl.skill.json 示例
 
 ```json
 {
-  "id": "talking_video",
+  "id": "talking-video",
   "version": "0.1.0",
   "input_schema": "input.schema.json",
   "output_schema": "output.schema.json",
@@ -885,7 +885,7 @@ description: Use when generating a structured talking-video draft from a topic, 
 
 ### 14.3 格式约束
 
-第一版只支持这一套 Skill 包规范：标准 `SKILL.md` + BKL `skill.config.json`。旧式 `skill.yaml + prompt.md` 不兼容，避免项目同时存在两套 Skill 规范。
+第一版只支持这一套 Skill 包规范：标准 `SKILL.md` + BKL `bkl.skill.json`。旧式 `skill.yaml + prompt.md` 不兼容，避免项目同时存在两套 Skill 规范。
 
 ---
 
@@ -1143,9 +1143,9 @@ bkl tool import-openapi ./examples/volc-openapi.json
 bkl tool list
 bkl tool test subtitle_generate_srt ./examples/subtitle_input.json
 
-bkl skill register ./skills/talking_video
+bkl skill register ./skills/talking-video
 bkl skill list
-bkl skill run talking_video ./examples/talking_video_input.json
+bkl skill run talking-video ./examples/talking_video_input.json
 
 bkl run list
 bkl run show <run_id>
@@ -1226,9 +1226,9 @@ bkl-skill-engine/
 
   examples/
     skills/
-      talking_video/
+      talking-video/
         SKILL.md
-        skill.config.json
+        bkl.skill.json
         input.schema.json
         output.schema.json
         examples.json
@@ -1719,19 +1719,19 @@ pytest 通过
 1. 定义 Skill、SkillLimits、SkillModelConfig。
 2. 支持读取行业标准 SKILL.md。
 3. 支持解析 YAML frontmatter 和 Markdown instructions。
-4. 支持读取 BKL skill.config.json。
+4. 支持读取 BKL bkl.skill.json。
 5. 支持读取 input.schema.json 和 output.schema.json。
 6. 支持 allowed_tools 配置。
-7. 添加 examples/skills/talking_video 示例。
+7. 添加 examples/skills/talking-video 示例。
 8. 添加测试用例。
 ```
 
 验收标准：
 
 ```text
-可以成功加载 talking_video Skill
+可以成功加载 talking-video Skill
 缺少 SKILL.md frontmatter 时会报错
-缺少 skill.config.json 时会报错
+缺少 bkl.skill.json 时会报错
 allowed_tools 为空时会报错
 pytest 通过
 ```
@@ -2118,7 +2118,7 @@ Trace 查询
 完成内容：
 
 ```text
-talking_video Skill
+talking-video Skill
 script_writer Tool
 title_generator Tool
 tts Tool
@@ -2280,7 +2280,7 @@ bkl-desktop
 约束：
 
 ```text
-Skill 规范只有一套：SKILL.md + skill.config.json
+Skill 规范只有一套：SKILL.md + bkl.skill.json
 Tool 规范只有一套：tool.yaml
 模型配置只有一套：bkl.yaml + .env
 CLI、HTTP、GUI 都调用同一个 SkillEngine
@@ -2415,7 +2415,7 @@ REST API 返回：
 {
   "run_id": "run_123",
   "status": "succeeded",
-  "skill_id": "talking_video",
+  "skill_id": "talking-video",
   "output": {},
   "error": null,
   "artifacts": [],
@@ -2498,7 +2498,7 @@ P0 即使内部同步执行，也必须保存 `Run` 和 `Trace`，保证后续�
 CLI 命令必须能表达 API 的核心参数：
 
 ```bash
-bkl skill run talking_video ./examples/inputs/talking_video_input.json \
+bkl skill run talking-video ./examples/inputs/talking-video-input.json \
   --context ./examples/inputs/context.json \
   --mode sync \
   --output json

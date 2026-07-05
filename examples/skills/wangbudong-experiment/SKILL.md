@@ -9,7 +9,7 @@ description: Use when creating a Wangbudong-style parent-child science experimen
 
 ## 输入
 
-输入必须符合 `input.schema.json`，至少包含：
+输入必须符合 `schemas/input.schema.json`，至少包含：
 
 - `experiment_title`：实验标题
 - `materials`：材料列表
@@ -55,7 +55,7 @@ description: Use when creating a Wangbudong-style parent-child science experimen
 
 ## 输出
 
-最终输出必须符合 `output.schema.json`，至少包含：
+最终输出必须符合 `schemas/output.schema.json`，至少包含：
 
 - `experiment_title`
 - `output_dir`

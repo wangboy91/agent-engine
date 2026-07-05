@@ -14,7 +14,7 @@ def test_tool_registry_registers_and_filters_allowed_tools() -> None:
 
 def test_skill_registry_registers_and_lists_skills() -> None:
     registry = InMemorySkillRegistry()
-    registry.register_skill("examples/skills/talking_video")
+    registry.register_skill("examples/skills/talking-video")
 
-    assert registry.get_skill("talking_video").id == "talking_video"
-    assert [skill.id for skill in registry.list_skills()] == ["talking_video"]
+    assert registry.get_skill("talking-video").id == "talking-video"
+    assert [skill.id for skill in registry.list_skills()] == ["talking-video"]

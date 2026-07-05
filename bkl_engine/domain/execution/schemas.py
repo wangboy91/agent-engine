@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 from bkl_engine.domain.common import JsonObject
 
-RunStatus = Literal["pending", "running", "succeeded", "failed"]
+RunStatus = Literal["pending", "running", "waiting_approval", "succeeded", "failed"]
 ArtifactType = Literal["text", "json", "image", "audio", "video", "subtitle", "zip", "log"]
 
 
@@ -48,6 +48,9 @@ class TraceEvent(BaseModel):
 
 class RunContext(BaseModel):
     user_id: str | None = None
+    workspace_id: str | None = None
+    identity_id: str | None = None
+    role_id: str | None = None
     project_id: str | None = None
     metadata: JsonObject = Field(default_factory=dict)
 
@@ -56,8 +59,11 @@ class RunResult(BaseModel):
     run_id: str
     status: RunStatus
     skill_id: str
+    input: JsonObject = Field(default_factory=dict)
+    context: RunContext | None = None
     output: JsonObject | None = None
     error: EngineError | None = None
+    pending_approval: JsonObject | None = None
     artifacts: list[Artifact] = Field(default_factory=list)
     trace_summary: JsonObject = Field(default_factory=dict)
     usage: UsageSummary = Field(default_factory=UsageSummary)

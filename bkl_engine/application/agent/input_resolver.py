@@ -27,7 +27,14 @@ class InputResolver:
         if input_draft:
             payload.update(input_draft)
 
-        payload.update(self._extract_known_fields(skill.id, message, payload))
+        payload.update(
+            self._extract_known_fields(
+                skill.id,
+                message,
+                payload,
+                has_topic="topic" in self._schema_properties(skill.input_schema),
+            )
+        )
         missing_fields = [
             field
             for field in self._required_fields(skill.input_schema)
@@ -44,10 +51,14 @@ class InputResolver:
         skill_id: str,
         message: str,
         current: dict[str, Any],
+        *,
+        has_topic: bool,
     ) -> dict[str, Any]:
         extracted: dict[str, Any] = {}
         if "topic" not in current:
             topic = self._extract_after_label(message, ["主题", "话题"])
+            if topic is None and has_topic:
+                topic = self._fallback_topic(message)
             if topic:
                 extracted["topic"] = topic
         if "duration_seconds" not in current:
@@ -59,7 +70,7 @@ class InputResolver:
             if platform:
                 extracted["platform"] = platform
 
-        if skill_id == "wangbudong_experiment":
+        if skill_id == "wangbudong-experiment":
             if "experiment_title" not in current:
                 title = self._extract_after_label(message, ["实验标题", "标题", "主题"])
                 if title:
@@ -78,14 +89,15 @@ class InputResolver:
         return extracted
 
     def _schema_defaults(self, schema: dict[str, Any]) -> dict[str, Any]:
-        properties = schema.get("properties")
-        if not isinstance(properties, dict):
-            return {}
         defaults: dict[str, Any] = {}
-        for key, value in properties.items():
+        for key, value in self._schema_properties(schema).items():
             if isinstance(value, dict) and "default" in value:
                 defaults[str(key)] = value["default"]
         return defaults
+
+    def _schema_properties(self, schema: dict[str, Any]) -> dict[str, Any]:
+        properties = schema.get("properties")
+        return dict(properties) if isinstance(properties, dict) else {}
 
     def _required_fields(self, schema: dict[str, Any]) -> list[str]:
         required = schema.get("required", [])
@@ -115,6 +127,20 @@ class InputResolver:
         if "微博" in message:
             return "weibo"
         return None
+
+    def _fallback_topic(self, message: str) -> str | None:
+        value = message.strip(" \t\r\n，。；;")
+        if not value:
+            return None
+        value = re.sub(r"\d+\s*秒", "", value)
+        value = re.sub(r"(小红书|抖音|B站|b站|微博)", "", value)
+        value = re.sub(
+            r"(帮我|请|生成|制作|做一个|输出|视频|口播|分镜提示词|分镜|提示词)",
+            "",
+            value,
+        )
+        value = value.strip(" \t\r\n，。；;")
+        return value or message.strip(" \t\r\n，。；;")
 
     def _extract_materials(self, message: str) -> list[str]:
         match = re.search(

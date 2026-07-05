@@ -1,0 +1,102 @@
+@startuml
+!pragma layout smetana
+title BKL Core Class Relations
+
+skinparam shadowing false
+left to right direction
+
+class SkillEngine {
+  +register_skill()
+  +register_tool()
+  +run_skill()
+}
+
+class RunSkillUseCase {
+  +execute()
+}
+
+class RunSkillCommand {
+  +skill_id
+  +input
+  +context
+}
+
+class SkillRuntime {
+  +run_skill()
+  -run_workflow()
+  -run_loop()
+  -validate_schema()
+  -trace_summary()
+}
+
+class HandleAgentMessageUseCase {
+  +execute()
+}
+
+class AgentLoop {
+  +handle_message()
+}
+
+class SkillRouter {
+  +route()
+}
+
+class InputResolver {
+  +resolve()
+}
+
+class ActionRegistry {
+  +run_skill()
+}
+
+class SkillRegistryPort <<Protocol>> {
+  +get_skill()
+  +list_skills()
+}
+
+class ToolRegistryPort <<Protocol>> {
+  +get_allowed_tools()
+}
+
+class ModelGatewayPort <<Protocol>> {
+  +chat()
+}
+
+class ToolExecutorPort <<Protocol>> {
+  +evaluate_policy()
+  +execute()
+}
+
+class RunStorePort <<Protocol>> {
+  +save()
+  +get()
+}
+
+class TraceStorePort <<Protocol>> {
+  +record()
+}
+
+class ArtifactStorePort <<Protocol>> {
+  +save_text()
+  +list_by_run()
+}
+
+RunSkillUseCase --> RunSkillCommand
+RunSkillUseCase --> SkillEngine
+SkillEngine *-- SkillRuntime
+
+HandleAgentMessageUseCase --> AgentLoop
+AgentLoop --> SkillRouter
+AgentLoop --> InputResolver
+AgentLoop --> ActionRegistry
+ActionRegistry --> SkillEngine
+
+SkillRuntime --> SkillRegistryPort
+SkillRuntime --> ToolRegistryPort
+SkillRuntime --> ModelGatewayPort
+SkillRuntime --> ToolExecutorPort
+SkillRuntime --> RunStorePort
+SkillRuntime --> TraceStorePort
+SkillRuntime --> ArtifactStorePort
+
+@enduml

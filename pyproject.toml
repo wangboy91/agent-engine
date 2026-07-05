@@ -36,6 +36,9 @@ bkl = "bkl_engine.interfaces.cli.main:app"
 [tool.setuptools.packages.find]
 include = ["bkl_engine*"]
 
+[tool.setuptools.package-data]
+"bkl_engine.interfaces.http" = ["static/*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 

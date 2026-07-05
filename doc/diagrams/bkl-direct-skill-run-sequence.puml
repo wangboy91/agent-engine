@@ -1,0 +1,49 @@
+@startuml
+title Direct Skill Run Sequence
+
+skinparam shadowing false
+
+actor User as "CLI / HTTP / SDK"
+participant "RunSkillUseCase" as UseCase
+participant "SkillEngine" as Engine
+participant "SkillRuntime" as Runtime
+participant "SkillRegistry" as SkillReg
+participant "ToolRegistry" as ToolReg
+participant "ModelRouter" as Model
+participant "ToolExecutor" as ToolExec
+participant "Run / Trace / Artifact Stores" as Store
+
+User -> UseCase : execute(RunSkillCommand)
+UseCase -> Engine : run_skill(skill_id, input, context)
+Engine -> Runtime : run_skill(skill_id, input, context)
+
+Runtime -> SkillReg : get_skill(skill_id)
+Runtime -> Store : save(running RunResult)
+Runtime -> Store : trace skill_started
+Runtime -> Runtime : validate input_schema
+
+alt Workflow Skill
+  Runtime -> Runtime : _run_workflow(...)
+  loop each workflow step
+    Runtime -> Runtime : run_skill(child_skill_id, workflow_context)
+  end
+else Normal Skill
+  Runtime -> ToolReg : get_allowed_tools(skill.allowed_tools)
+  Runtime -> Model : chat(prompt, input, tools)
+  alt model requests tool calls
+    Runtime -> ToolExec : execute(tool, arguments, context)
+    ToolExec --> Runtime : ToolExecutionResult
+    Runtime -> Model : chat(..., tool observation)
+  else final output
+    Model --> Runtime : final_output
+  end
+end
+
+Runtime -> Runtime : validate output_schema
+Runtime -> Store : save artifacts / trace / final run
+Runtime --> Engine : RunResult
+Engine --> UseCase : RunResult
+UseCase --> User : RunResult
+
+@enduml
+

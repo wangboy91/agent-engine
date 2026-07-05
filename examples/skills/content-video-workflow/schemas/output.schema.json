@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "workflow_id",
+    "input",
+    "step_runs",
+    "content_brief",
+    "hook_plan",
+    "style_bible",
+    "script",
+    "script_segments",
+    "storyboard",
+    "render_prompt_pack",
+    "asset_manifest",
+    "timeline",
+    "render_job",
+    "video_draft",
+    "review_report"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "workflow_id": {
+      "type": "string"
+    },
+    "input": {
+      "type": "object"
+    },
+    "step_runs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["step_id", "skill_id", "run_id", "status"],
+        "additionalProperties": true,
+        "properties": {
+          "step_id": {
+            "type": "string"
+          },
+          "skill_id": {
+            "type": "string"
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "content_brief": {
+      "type": "object"
+    },
+    "hook_plan": {
+      "type": "object"
+    },
+    "style_bible": {
+      "type": "object"
+    },
+    "script": {
+      "type": "object"
+    },
+    "script_segments": {
+      "type": "array"
+    },
+    "storyboard": {
+      "type": "object"
+    },
+    "render_prompt_pack": {
+      "type": "object"
+    },
+    "asset_manifest": {
+      "type": "object"
+    },
+    "timeline": {
+      "type": "object"
+    },
+    "render_job": {
+      "type": "object"
+    },
+    "video_draft": {
+      "type": "object"
+    },
+    "review_report": {
+      "type": "object"
+    }
+  }
+}

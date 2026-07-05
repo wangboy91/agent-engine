@@ -26,5 +26,6 @@ class HandleAgentMessageUseCase:
             scene_id=command.scene_id,
             skill_id=command.skill_id,
             input_data=command.input,
+            context=command.context,
             confirm=command.confirm,
         )

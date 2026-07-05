@@ -5,15 +5,20 @@ from __future__ import annotations
 from typing import Any
 
 from bkl_engine.application.ports import AgentRuntimePort
-from bkl_engine.domain.execution import RunResult
+from bkl_engine.domain.execution import RunContext, RunResult
 
 
 class ActionRegistry:
     def __init__(self, engine: AgentRuntimePort) -> None:
         self.engine = engine
 
-    async def run_skill(self, skill_id: str, input_data: dict[str, Any]) -> RunResult:
-        return await self.engine.run_skill(skill_id, input_data)
+    async def run_skill(
+        self,
+        skill_id: str,
+        input_data: dict[str, Any],
+        context: RunContext | None = None,
+    ) -> RunResult:
+        return await self.engine.run_skill(skill_id, input_data, context)
 
     def list_skills(self) -> list[str]:
         return [skill.id for skill in self.engine.skill_registry.list_skills()]

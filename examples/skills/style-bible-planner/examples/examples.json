@@ -1,0 +1,19 @@
+[
+  {
+    "input": {
+      "content_brief": {
+        "topic": "AI Agent 内容生产"
+      }
+    },
+    "output": {
+      "style_bible": {
+        "tone": "直接、清楚",
+        "visual_style": "真实口播 + 信息图",
+        "color_palette": ["black", "white", "electric_blue"],
+        "typography": "粗体关键词字幕",
+        "camera_language": "中景口播为主",
+        "screen_text_rules": ["短句化", "关键词优先"]
+      }
+    }
+  }
+]

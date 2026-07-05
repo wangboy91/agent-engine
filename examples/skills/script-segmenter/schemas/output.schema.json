@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["script_segments"],
+  "additionalProperties": true,
+  "properties": {
+    "script_segments": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "order",
+          "time_range",
+          "duration",
+          "spoken_text",
+          "function",
+          "emotion",
+          "screen_text"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "order": {
+            "type": "integer"
+          },
+          "time_range": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "items": {
+                  "type": "number"
+                }
+              }
+            ]
+          },
+          "duration": {
+            "type": "integer"
+          },
+          "spoken_text": {
+            "type": "string"
+          },
+          "function": {
+            "type": "string"
+          },
+          "emotion": {
+            "type": "string"
+          },
+          "screen_text": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

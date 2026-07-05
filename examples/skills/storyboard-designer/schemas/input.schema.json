@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["script_segments", "style_bible"],
+  "additionalProperties": true,
+  "properties": {
+    "script_segments": {
+      "type": "array"
+    },
+    "style_bible": {
+      "type": "object"
+    }
+  }
+}

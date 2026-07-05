@@ -1,14 +1,14 @@
 {
-  "id": "wangbudong_experiment",
+  "id": "talking-video",
   "version": "0.1.0",
-  "input_schema": "input.schema.json",
-  "output_schema": "output.schema.json",
+  "input_schema": "schemas/input.schema.json",
+  "output_schema": "schemas/output.schema.json",
   "model": {
     "profile": "mock"
   },
   "tools": {
     "allow": [
-      "wangbudong_write_prompt_pack"
+      "subtitle_generate_srt"
     ]
   },
   "limits": {

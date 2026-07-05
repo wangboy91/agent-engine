@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["render_prompt_pack"],
+  "additionalProperties": true,
+  "properties": {
+    "render_prompt_pack": {
+      "type": "object"
+    },
+    "script_segments": {
+      "type": "array"
+    }
+  }
+}

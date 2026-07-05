@@ -49,6 +49,11 @@ class ToolExecutionContext(BaseModel):
     tool_call_id: str
     artifact_dir: Path
     skill_id: str | None = None
+    user_id: str | None = None
+    workspace_id: str | None = None
+    identity_id: str | None = None
+    role_id: str | None = None
+    project_id: str | None = None
 
 
 class ToolExecutionResult(BaseModel):

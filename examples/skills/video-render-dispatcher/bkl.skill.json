@@ -1,0 +1,32 @@
+{
+  "id": "video-render-dispatcher",
+  "version": "0.1.0",
+  "input_schema": "schemas/input.schema.json",
+  "output_schema": "schemas/output.schema.json",
+  "model": {
+    "profile": "mock"
+  },
+  "tools": {
+    "allow": [
+      "mock_video_render"
+    ]
+  },
+  "execution": {
+    "type": "direct_tool",
+    "tool_id": "mock_video_render",
+    "output_mapping": {
+      "render_job.render_job_id": "render_job_id",
+      "render_job.status": "status",
+      "render_job.provider": "provider",
+      "render_job.video_path": "video_path",
+      "render_job.manifest_path": "manifest_path",
+      "render_job.generated_assets": "generated_assets",
+      "video_draft": "video_draft"
+    }
+  },
+  "limits": {
+    "max_iterations": 2,
+    "max_tool_calls": 1,
+    "max_tokens": 10000
+  }
+}

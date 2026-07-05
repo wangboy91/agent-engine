@@ -1,0 +1,39 @@
+@startuml
+title Agent Message to Skill Run Sequence
+
+skinparam shadowing false
+
+actor User as "CLI / HTTP Chat"
+participant "HandleAgentMessageUseCase" as UseCase
+participant "AgentLoop" as Loop
+participant "SkillRouter" as Router
+participant "InputResolver" as Resolver
+participant "ActionRegistry" as Action
+participant "SkillEngine" as Engine
+participant "SkillRuntime" as Runtime
+
+User -> UseCase : execute(HandleAgentMessageCommand)
+UseCase -> Loop : handle_message(...)
+
+Loop -> Router : route(message, explicit_skill_id?)
+Router --> Loop : RouteDecision(skill_id, confidence)
+
+Loop -> Resolver : resolve(skill, message, defaults)
+Resolver --> Loop : input + missing_fields
+
+alt missing required fields
+  Loop --> UseCase : AgentResponse(needs_input)
+  UseCase --> User : needs_input
+else ready to run
+  Loop -> Action : run_skill(skill_id, input)
+  Action -> Engine : run_skill(skill_id, input)
+  Engine -> Runtime : run_skill(skill_id, input)
+  Runtime --> Engine : RunResult
+  Engine --> Action : RunResult
+  Action --> Loop : ActionResult
+  Loop --> UseCase : AgentResponse(completed)
+  UseCase --> User : completed + output
+end
+
+@enduml
+

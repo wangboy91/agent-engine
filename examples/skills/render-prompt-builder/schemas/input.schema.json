@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["storyboard", "style_bible"],
+  "additionalProperties": true,
+  "properties": {
+    "storyboard": {
+      "type": "object"
+    },
+    "style_bible": {
+      "type": "object"
+    },
+    "provider": {
+      "type": "string",
+      "default": "seedance"
+    }
+  }
+}

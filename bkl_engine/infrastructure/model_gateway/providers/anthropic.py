@@ -31,17 +31,42 @@ class AnthropicProvider:
         if self.config.base_url is None:
             raise BklEngineError("CONFIG_INVALID", "Anthropic base_url is required")
 
-        response = await self.client.post(
-            f"{self.config.base_url.rstrip('/')}/v1/messages",
-            headers=self._headers(),
-            json={
-                "model": self.config.model,
-                "max_tokens": self.config.max_tokens,
-                "messages": self._format_messages(messages),
-                "tools": self._format_tools(tools),
-            },
-        )
-        response.raise_for_status()
+        try:
+            response = await self.client.post(
+                f"{self.config.base_url.rstrip('/')}/v1/messages",
+                headers=self._headers(),
+                json={
+                    "model": self.config.model,
+                    "max_tokens": self.config.max_tokens,
+                    "messages": self._format_messages(messages),
+                    "tools": self._format_tools(tools),
+                },
+            )
+            response.raise_for_status()
+        except httpx.TimeoutException as exc:
+            raise BklEngineError(
+                "MODEL_PROVIDER_TIMEOUT",
+                f"Anthropic model request timed out after {self.config.timeout_seconds}s",
+                {
+                    "provider": "anthropic",
+                    "timeout_seconds": self.config.timeout_seconds,
+                    "error_type": exc.__class__.__name__,
+                },
+                retryable=True,
+            ) from exc
+        except httpx.HTTPError as exc:
+            details: dict[str, object] = {
+                "provider": "anthropic",
+                "error_type": exc.__class__.__name__,
+            }
+            if isinstance(exc, httpx.HTTPStatusError):
+                details["status_code"] = exc.response.status_code
+            raise BklEngineError(
+                "MODEL_PROVIDER_ERROR",
+                str(exc) or exc.__class__.__name__,
+                details,
+                retryable=True,
+            ) from exc
         payload = response.json()
         if not isinstance(payload, dict):
             raise BklEngineError("MODEL_PROVIDER_ERROR", "Anthropic response is invalid")
@@ -146,17 +171,63 @@ class AnthropicProvider:
             for block in content
             if isinstance(block, dict) and block.get("type") == "text"
         )
-        text = self._strip_code_fence(text)
-        try:
-            parsed = json.loads(text)
-        except json.JSONDecodeError:
+        text = self._extract_json_text(text)
+        parsed = self._parse_json_object(text)
+        if parsed is None:
             return {"text": text}
         if isinstance(parsed, dict):
             return dict(parsed)
         return {"text": text}
 
-    def _strip_code_fence(self, content: str) -> str:
-        match = re.match(r"\A```(?:json)?\s*(.*?)\s*```\Z", content.strip(), re.DOTALL)
-        if match is None:
-            return content
-        return match.group(1).strip()
+    def _parse_json_object(self, content: str) -> object | None:
+        for candidate in (content, self._repair_json_text(content)):
+            try:
+                parsed: object = json.loads(candidate)
+            except json.JSONDecodeError:
+                continue
+            return parsed
+        return None
+
+    def _repair_json_text(self, content: str) -> str:
+        repaired: list[str] = []
+        in_string = False
+        escaped = False
+        for char in content:
+            if in_string:
+                if escaped:
+                    repaired.append(char)
+                    escaped = False
+                    continue
+                if char == "\\":
+                    repaired.append(char)
+                    escaped = True
+                    continue
+                if char == '"':
+                    repaired.append(char)
+                    in_string = False
+                    continue
+                if char == "\n":
+                    repaired.append("\\n")
+                    continue
+                if char == "\r":
+                    repaired.append("\\r")
+                    continue
+                repaired.append(char)
+                continue
+            repaired.append(char)
+            if char == '"':
+                in_string = True
+        return re.sub(r",\s*([}\]])", r"\1", "".join(repaired))
+
+    def _extract_json_text(self, content: str) -> str:
+        stripped = content.strip()
+        match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", stripped, re.DOTALL)
+        if match is not None:
+            return match.group(1).strip()
+        if stripped.startswith("{") and stripped.endswith("}"):
+            return stripped
+        start = stripped.find("{")
+        end = stripped.rfind("}")
+        if start != -1 and end > start:
+            return stripped[start : end + 1].strip()
+        return stripped

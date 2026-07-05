@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["render_prompt_pack", "asset_manifest", "timeline", "video_draft"],
+  "additionalProperties": true,
+  "properties": {
+    "render_prompt_pack": {
+      "type": "object"
+    },
+    "asset_manifest": {
+      "type": "object"
+    },
+    "timeline": {
+      "type": "object"
+    },
+    "video_draft": {
+      "type": "object"
+    },
+    "script": {
+      "type": "object"
+    }
+  }
+}

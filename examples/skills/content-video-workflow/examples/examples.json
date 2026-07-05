@@ -1,0 +1,31 @@
+[
+  {
+    "input": {
+      "topic": "AI Agent 内容生产",
+      "platform": "douyin",
+      "duration_seconds": 60,
+      "audience": "传统行业老板",
+      "content_type": "talking_head"
+    },
+    "output": {
+      "workflow_id": "content-video-workflow",
+      "input": {
+        "topic": "AI Agent 内容生产",
+        "platform": "douyin",
+        "duration_seconds": 60
+      },
+      "step_runs": [],
+      "content_brief": {},
+      "hook_plan": {},
+      "style_bible": {},
+      "script": {},
+      "script_segments": [],
+      "storyboard": {},
+      "render_prompt_pack": {},
+      "asset_manifest": {},
+      "timeline": {},
+      "video_draft": {},
+      "review_report": {}
+    }
+  }
+]

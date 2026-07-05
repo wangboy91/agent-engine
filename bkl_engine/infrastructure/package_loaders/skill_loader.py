@@ -10,7 +10,13 @@ from pydantic import ValidationError
 
 from bkl_engine.domain.common import JsonObject
 from bkl_engine.domain.errors import BklEngineError
-from bkl_engine.domain.skill import Skill, SkillLimits, SkillModelConfig
+from bkl_engine.domain.skill import (
+    Skill,
+    SkillExecutionConfig,
+    SkillLimits,
+    SkillModelConfig,
+    SkillWorkflowConfig,
+)
 
 
 class SkillLoadError(BklEngineError):
@@ -20,7 +26,21 @@ class SkillLoadError(BklEngineError):
         super().__init__("SKILL_LOAD_ERROR", message)
 
 
-RUNTIME_CONFIG_FILE = "skill.config.json"
+RUNTIME_CONFIG_FILE = "bkl.skill.json"
+LEGACY_RUNTIME_CONFIG_FILE = "skill.config.json"
+DEFAULT_INPUT_SCHEMA: JsonObject = {
+    "type": "object",
+    "additionalProperties": True,
+    "properties": {
+        "user_input": {
+            "type": "string",
+        }
+    },
+}
+DEFAULT_OUTPUT_SCHEMA: JsonObject = {
+    "type": "object",
+    "additionalProperties": True,
+}
 
 
 def load_skill(path: str | Path) -> Skill:
@@ -45,8 +65,12 @@ def _load_standard_skill(skill_dir: Path, skill_md_path: Path) -> Skill:
             f"{skill_md_path}"
         )
 
-    runtime_config_path = skill_dir / RUNTIME_CONFIG_FILE
-    runtime_config = _load_runtime_config(runtime_config_path)
+    runtime_config_path = _runtime_config_path(skill_dir)
+    runtime_config = (
+        _load_runtime_config(runtime_config_path)
+        if runtime_config_path is not None
+        else _default_runtime_config(frontmatter["name"])
+    )
 
     raw_skill: JsonObject = {
         "id": runtime_config.get("id", frontmatter["name"]),
@@ -59,11 +83,13 @@ def _load_standard_skill(skill_dir: Path, skill_md_path: Path) -> Skill:
         "model": runtime_config.get("model", {}),
         "limits": runtime_config.get("limits", {}),
         "tools": runtime_config.get("tools", {}),
+        "workflow": runtime_config.get("workflow"),
+        "execution": runtime_config.get("execution", {}),
     }
     _ensure_required_fields(
         raw_skill,
         required=("id", "name", "version", "description", "input_schema", "output_schema"),
-        source=runtime_config_path,
+        source=runtime_config_path or skill_md_path,
     )
 
     raw_skill["input_schema"] = _load_schema(skill_dir, raw_skill["input_schema"], "input_schema")
@@ -72,21 +98,26 @@ def _load_standard_skill(skill_dir: Path, skill_md_path: Path) -> Skill:
         raw_skill["output_schema"],
         "output_schema",
     )
-    return _build_skill(raw_skill, skill_dir, runtime_config_path)
+    return _build_skill(raw_skill, skill_dir, runtime_config_path or skill_md_path)
 
 
 def _build_skill(raw_skill: JsonObject, skill_dir: Path, source: Path) -> Skill:
     allowed_tools = _load_allowed_tools(raw_skill)
-    if not allowed_tools:
-        raise SkillLoadError(f"Skill {raw_skill['id']} must declare at least one allowed tool")
 
     try:
+        workflow = (
+            SkillWorkflowConfig.model_validate(raw_skill["workflow"])
+            if raw_skill.get("workflow") is not None
+            else None
+        )
         return Skill.model_validate(
             {
                 **raw_skill,
                 "allowed_tools": allowed_tools,
                 "model": SkillModelConfig.model_validate(raw_skill.get("model", {})),
                 "limits": SkillLimits.model_validate(raw_skill.get("limits", {})),
+                "workflow": workflow,
+                "execution": SkillExecutionConfig.model_validate(raw_skill.get("execution", {})),
                 "package_path": skill_dir,
             }
         )
@@ -121,6 +152,27 @@ def _read_markdown_with_frontmatter(path: Path) -> tuple[JsonObject, str]:
         raise SkillLoadError(f"SKILL.md body must contain Markdown instructions: {path}")
 
     return dict(frontmatter), body
+
+
+def _runtime_config_path(skill_dir: Path) -> Path | None:
+    runtime_config_path = skill_dir / RUNTIME_CONFIG_FILE
+    if runtime_config_path.exists():
+        return runtime_config_path
+    legacy_runtime_config_path = skill_dir / LEGACY_RUNTIME_CONFIG_FILE
+    if legacy_runtime_config_path.exists():
+        return legacy_runtime_config_path
+    return None
+
+
+def _default_runtime_config(skill_name: object) -> JsonObject:
+    return {
+        "id": str(skill_name),
+        "version": "0.1.0",
+        "input_schema": DEFAULT_INPUT_SCHEMA,
+        "output_schema": DEFAULT_OUTPUT_SCHEMA,
+        "model": {"profile": "mock"},
+        "tools": {"allow": []},
+    }
 
 
 def _load_runtime_config(path: Path) -> JsonObject:

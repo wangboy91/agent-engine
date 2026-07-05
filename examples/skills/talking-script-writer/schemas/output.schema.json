@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["script"],
+  "additionalProperties": true,
+  "properties": {
+    "script": {
+      "type": "object",
+      "required": ["title", "full_text", "estimated_duration_seconds", "tone", "cta"],
+      "additionalProperties": true,
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "full_text": {
+          "type": "string"
+        },
+        "estimated_duration_seconds": {
+          "type": "integer"
+        },
+        "tone": {
+          "type": "string"
+        },
+        "cta": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

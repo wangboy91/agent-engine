@@ -119,6 +119,37 @@ def test_cli_serve_starts_fastapi_app_with_config(monkeypatch, tmp_path) -> None
     assert captured["kwargs"]["port"] == 9000
 
 
+def test_cli_gateway_starts_fastapi_app_with_stream_transports(
+    monkeypatch, tmp_path
+) -> None:  # type: ignore[no-untyped-def]
+    config_path = _write_mock_config(tmp_path)
+    captured = {}
+
+    def fake_run(api, **kwargs):  # type: ignore[no-untyped-def]
+        captured["api"] = api
+        captured["kwargs"] = kwargs
+
+    monkeypatch.setattr("bkl_engine.interfaces.cli.main.uvicorn.run", fake_run)
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "gateway",
+            "--host",
+            "0.0.0.0",
+            "--port",
+            "9100",
+            "--config",
+            str(config_path),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured["api"].title == "BKL Skill Engine"
+    assert captured["kwargs"]["host"] == "0.0.0.0"
+    assert captured["kwargs"]["port"] == 9100
+
+
 def test_cli_register_commands_write_catalog(tmp_path) -> None:  # type: ignore[no-untyped-def]
     config_path = _write_mock_config(tmp_path)
     catalog_path = tmp_path / ".bkl" / "catalog.json"
@@ -140,7 +171,7 @@ def test_cli_register_commands_write_catalog(tmp_path) -> None:  # type: ignore[
         [
             "skill",
             "register",
-            "examples/skills/talking_video",
+            "examples/skills/talking-video",
             "--config",
             str(config_path),
             "--catalog",
@@ -155,7 +186,7 @@ def test_cli_register_commands_write_catalog(tmp_path) -> None:  # type: ignore[
         catalog["tools"]["subtitle_generate_srt"]["path"]
         == "examples/tools/subtitle_generate_srt"
     )
-    assert catalog["skills"]["talking_video"]["path"] == "examples/skills/talking_video"
+    assert catalog["skills"]["talking-video"]["path"] == "examples/skills/talking-video"
 
 
 def _write_mock_config(tmp_path):  # type: ignore[no-untyped-def]

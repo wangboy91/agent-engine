@@ -3,8 +3,8 @@
 from pathlib import Path
 from uuid import uuid4
 
-from bkl_engine.domain.execution import Artifact, ArtifactType
 from bkl_engine.domain.errors import BklEngineError
+from bkl_engine.domain.execution import Artifact, ArtifactType
 
 
 class LocalArtifactStore:

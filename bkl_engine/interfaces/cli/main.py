@@ -13,6 +13,7 @@ from rich.console import Console
 from bkl_engine import __version__
 from bkl_engine.application.agent import HandleAgentMessageCommand, HandleAgentMessageUseCase
 from bkl_engine.application.skill import RunSkillCommand, RunSkillUseCase
+from bkl_engine.domain.errors import BklEngineError
 from bkl_engine.domain.tool import ToolExecutionContext
 from bkl_engine.engine import SkillEngine
 from bkl_engine.infrastructure.package_loaders.skill_loader import load_skill
@@ -139,6 +140,25 @@ def serve(
     uvicorn.run(api, host=host, port=port, reload=reload)
 
 
+@app.command("gateway")
+def gateway(
+    host: Annotated[str, typer.Option(help="Host to bind.")] = "127.0.0.1",
+    port: Annotated[int, typer.Option(help="Port to bind.")] = 8000,
+    config: Annotated[Path | None, typer.Option(help="Config file to load.")] = None,
+    catalog: Annotated[Path | None, typer.Option(help="Catalog file to load.")] = (
+        DEFAULT_CATALOG_PATH
+    ),
+    reload: Annotated[bool, typer.Option(help="Enable uvicorn reload.")] = False,
+) -> None:
+    """Start the HTTP/SSE/WebSocket gateway."""
+
+    from bkl_engine.interfaces.http.main import create_app
+
+    engine = SkillEngine.load(config, catalog_path=catalog)
+    api = create_app(engine)
+    uvicorn.run(api, host=host, port=port, reload=reload)
+
+
 @app.command("chat")
 def chat(
     once: Annotated[
@@ -159,6 +179,10 @@ def chat(
     ),
     config: Annotated[Path | None, typer.Option(help="Config file to load.")] = None,
     output: Annotated[str, typer.Option(help="Output format: table or json.")] = "table",
+    view: Annotated[
+        str,
+        typer.Option(help="Response view: full, prompts, or trace."),
+    ] = "full",
 ) -> None:
     """Run the Agent orchestration layer."""
 
@@ -168,20 +192,21 @@ def chat(
     input_data = _read_json(input_json) if input_json is not None else None
 
     if once is not None:
-        response = asyncio.run(
-            use_case.execute(
-                HandleAgentMessageCommand(
-                    message=once,
-                    scene_id=scene,
-                    skill_id=skill,
-                    input=input_data or {},
+        try:
+            response = asyncio.run(
+                use_case.execute(
+                    HandleAgentMessageCommand(
+                        message=once,
+                        scene_id=scene,
+                        skill_id=skill,
+                        input=input_data or {},
+                    )
                 )
             )
-        )
-        if output == "json":
-            typer.echo(json.dumps(response.model_dump(mode="json"), ensure_ascii=False))
-        else:
-            console.print(response.model_dump(mode="json"))
+        except BklEngineError as exc:
+            _print_error(exc, output)
+            raise typer.Exit(1) from exc
+        _print_agent_response(response.model_dump(mode="json"), output, view)
         return
 
     console.print("bkl chat interactive mode. Type 'exit' to quit.")
@@ -189,12 +214,16 @@ def chat(
         message = typer.prompt("bkl")
         if message.strip().lower() in {"exit", "quit"}:
             return
-        response = asyncio.run(
-            use_case.execute(
-                HandleAgentMessageCommand(message=message, scene_id=scene, skill_id=skill)
+        try:
+            response = asyncio.run(
+                use_case.execute(
+                    HandleAgentMessageCommand(message=message, scene_id=scene, skill_id=skill)
+                )
             )
-        )
-        console.print(response.model_dump(mode="json"))
+        except BklEngineError as exc:
+            _print_error(exc, output)
+            continue
+        _print_agent_response(response.model_dump(mode="json"), output, view)
 
 
 @tool_app.command("register")
@@ -332,6 +361,69 @@ def _read_json(path: Path) -> dict[str, object]:
     if not isinstance(data, dict):
         raise typer.BadParameter(f"JSON input must be an object: {path}")
     return data
+
+
+def _print_agent_response(data: dict[str, object], output: str, view: str) -> None:
+    data = _agent_response_view(data, view)
+    if output == "json":
+        typer.echo(json.dumps(data, ensure_ascii=False))
+    else:
+        console.print_json(data=data)
+
+
+def _print_error(exc: BklEngineError, output: str) -> None:
+    data = {
+        "status": "failed",
+        "error": {
+            "code": exc.code,
+            "message": exc.message,
+            "details": exc.details,
+            "retryable": exc.retryable,
+        },
+    }
+    if output == "json":
+        typer.echo(json.dumps(data, ensure_ascii=False))
+    else:
+        console.print_json(data=data)
+
+
+def _agent_response_view(data: dict[str, object], view: str) -> dict[str, object]:
+    if view == "full":
+        return data
+    if view == "trace":
+        raw_output = data.get("output")
+        skill_output = raw_output if isinstance(raw_output, dict) else {}
+        raw_action_results = data.get("action_results")
+        action_results = raw_action_results if isinstance(raw_action_results, list) else []
+        if action_results and isinstance(action_results[0], dict):
+            first_action = action_results[0]
+        else:
+            first_action = {}
+        trace_summary = (
+            first_action.get("trace_summary", {})
+            if isinstance(first_action, dict)
+            else {}
+        )
+        return {
+            "status": data.get("status"),
+            "run_ids": data.get("run_ids", []),
+            "trace_summary": trace_summary,
+            "workflow_steps": skill_output.get("step_runs", []),
+            "artifacts": data.get("artifacts", []),
+        }
+
+    if view != "prompts":
+        raise typer.BadParameter("view must be one of: full, prompts, trace")
+
+    raw_output = data.get("output")
+    skill_output = raw_output if isinstance(raw_output, dict) else {}
+    return {
+        "status": data.get("status"),
+        "run_ids": data.get("run_ids", []),
+        "storyboard": skill_output.get("storyboard"),
+        "render_prompt_pack": skill_output.get("render_prompt_pack"),
+        "artifacts": data.get("artifacts", []),
+    }
 
 
 def _default_api_key_env(protocol: str) -> str | None:

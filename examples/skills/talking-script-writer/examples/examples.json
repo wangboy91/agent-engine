@@ -1,0 +1,25 @@
+[
+  {
+    "input": {
+      "content_brief": {
+        "topic": "AI Agent 内容生产",
+        "duration_seconds": 60
+      },
+      "hook_plan": {
+        "best_hook": "很多人做 AI 内容，第一步就错了。"
+      },
+      "style_bible": {
+        "tone": "直接"
+      }
+    },
+    "output": {
+      "script": {
+        "title": "AI Agent 内容生产的正确流程",
+        "full_text": "很多人做 AI 内容，第一步就错了。",
+        "estimated_duration_seconds": 60,
+        "tone": "直接",
+        "cta": "先跑通一条链路。"
+      }
+    }
+  }
+]

@@ -1,0 +1,113 @@
+{
+  "id": "content-video-workflow",
+  "version": "0.1.0",
+  "input_schema": "schemas/input.schema.json",
+  "output_schema": "schemas/output.schema.json",
+  "model": {
+    "profile": "mock"
+  },
+  "tools": {
+    "allow": []
+  },
+  "workflow": {
+    "output_artifact": "content-video-workflow.json",
+    "max_parallel_steps": 2,
+    "steps": [
+      {
+        "id": "content_brief",
+        "skill_id": "content-brief-planner",
+        "description": "Turn the raw idea into ContentBrief."
+      },
+      {
+        "id": "hook_plan",
+        "skill_id": "hook-plan-generator",
+        "description": "Create hooks for the opening.",
+        "depends_on": [
+          "content_brief"
+        ]
+      },
+      {
+        "id": "style_bible",
+        "skill_id": "style-bible-planner",
+        "description": "Define language and visual style rules.",
+        "depends_on": [
+          "content_brief"
+        ]
+      },
+      {
+        "id": "script",
+        "skill_id": "talking-script-writer",
+        "description": "Write the talking script.",
+        "depends_on": [
+          "hook_plan",
+          "style_bible"
+        ]
+      },
+      {
+        "id": "script_segments",
+        "skill_id": "script-segmenter",
+        "description": "Split the script into timed segments.",
+        "depends_on": [
+          "script"
+        ]
+      },
+      {
+        "id": "storyboard",
+        "skill_id": "storyboard-designer",
+        "description": "Design shots for every segment.",
+        "depends_on": [
+          "script_segments",
+          "style_bible"
+        ]
+      },
+      {
+        "id": "render_prompt_pack",
+        "skill_id": "render-prompt-builder",
+        "description": "Translate shots into render prompts.",
+        "depends_on": [
+          "storyboard"
+        ]
+      },
+      {
+        "id": "asset_manifest",
+        "skill_id": "asset-manifest-builder",
+        "description": "Create the managed asset list.",
+        "depends_on": [
+          "render_prompt_pack"
+        ]
+      },
+      {
+        "id": "timeline",
+        "skill_id": "video-timeline-planner",
+        "description": "Plan timeline and video draft.",
+        "depends_on": [
+          "script_segments",
+          "storyboard",
+          "asset_manifest"
+        ]
+      },
+      {
+        "id": "render_job",
+        "skill_id": "video-render-dispatcher",
+        "description": "Dispatch render prompts, assets, and timeline to a video render tool.",
+        "depends_on": [
+          "render_prompt_pack",
+          "asset_manifest",
+          "timeline"
+        ]
+      },
+      {
+        "id": "review_report",
+        "skill_id": "content-review-reporter",
+        "description": "Review the planned output.",
+        "depends_on": [
+          "render_job"
+        ]
+      }
+    ]
+  },
+  "limits": {
+    "max_iterations": 1,
+    "max_tokens": 12000
+  }
+}

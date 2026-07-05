@@ -44,6 +44,8 @@ class ActionResult(BaseModel):
     run_id: str | None = None
     output: JsonObject | None = None
     error: str | None = None
+    trace_summary: JsonObject = Field(default_factory=dict)
+    artifacts: list[JsonObject] = Field(default_factory=list)
 
 
 class ActionPlan(BaseModel):
@@ -79,6 +81,9 @@ class AgentTurn(BaseModel):
 
 class AgentSession(BaseModel):
     session_id: str
+    workspace_id: str | None = None
+    identity_id: str | None = None
+    user_id: str | None = None
     messages: list[AgentMessage] = Field(default_factory=list)
     turns: list[AgentTurn] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

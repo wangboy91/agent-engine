@@ -32,9 +32,9 @@ The main facade is `bkl_engine.engine.SkillEngine`.
 Skill packages use:
 
 - `SKILL.md`: YAML frontmatter with `name` and `description`, followed by instructions.
-- `skill.config.json`: BKL runtime config, model profile, schema paths, allowed tools.
-- `input.schema.json` and `output.schema.json`: JSON Schema contracts.
-- `examples.json`: examples for documentation and tests.
+- `bkl.skill.json`: BKL runtime config, model profile, schema paths, allowed tools.
+- `schemas/input.schema.json` and `schemas/output.schema.json`: JSON Schema contracts.
+- `examples/examples.json`: examples for documentation and tests.
 
 Tool packages use:
 
@@ -43,7 +43,7 @@ Tool packages use:
 - `main.py` for Python tools. Python tools communicate through JSON stdin/stdout and receive
   artifact context through `BKL_RUN_ID`, `BKL_TOOL_CALL_ID`, and `BKL_ARTIFACT_DIR`.
 
-Keep Skill runtime configuration out of `SKILL.md`; put it in `skill.config.json`.
+Keep Skill runtime configuration out of `SKILL.md`; put it in `bkl.skill.json`.
 
 ## Development Commands
 
@@ -60,7 +60,7 @@ Useful CLI smoke tests:
 ```bash
 uv --cache-dir .uv-cache run --extra dev bkl --version
 uv --cache-dir .uv-cache run --extra dev bkl tool test examples/tools/subtitle_generate_srt examples/inputs/subtitle_input.json --output json
-uv --cache-dir .uv-cache run --extra dev bkl skill run talking_video examples/inputs/talking_video_input.json --skills-dir examples/skills --tools-dir examples/tools --output json
+uv --cache-dir .uv-cache run --extra dev bkl skill run talking-video examples/inputs/talking-video-input.json --skills-dir examples/skills --tools-dir examples/tools --output json
 uv --cache-dir .uv-cache run --extra dev bkl chat --once "generate a 60 second talking video about eye-friendly desk lamps for programmers" --skills-dir examples/skills --tools-dir examples/tools --output json
 ```
 
@@ -80,7 +80,7 @@ from `wangbudong_write_prompt_pack` execution paths:
 - `tests/test_agent_runtime.py::test_agent_loop_routes_natural_language_to_registered_skill`
 - `tests/test_python_tool_runner.py::test_wangbudong_prompt_pack_tool_writes_markdown_files`
 - `tests/test_python_tool_runner.py::test_python_tool_runner_resolves_relative_artifact_dir_from_caller_cwd`
-- `tests/test_skill_runtime.py::test_skill_engine_runs_wangbudong_experiment_skill`
+- `tests/test_skill_runtime.py::test_skill_engine_runs_wangbudong-experiment_skill`
 
 The immediate cause is that `examples/tools/wangbudong_write_prompt_pack/main.py` contains
 mojibake and broken Python string literals, so the Python tool exits with code 1.
@@ -108,4 +108,3 @@ mojibake and broken Python string literals, so the Python tool exits with code 1
 - CLI/API changes: `tests/test_cli.py`, `tests/test_api_cli.py`
 - Model config/provider changes: `tests/test_model_config.py`, `tests/test_model_providers.py`
 - Catalog/artifact/trace storage changes: `tests/test_catalog_store.py`, `tests/test_stores.py`
-

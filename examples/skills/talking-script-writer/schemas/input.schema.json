@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["content_brief", "hook_plan", "style_bible"],
+  "additionalProperties": true,
+  "properties": {
+    "content_brief": {
+      "type": "object"
+    },
+    "hook_plan": {
+      "type": "object"
+    },
+    "style_bible": {
+      "type": "object"
+    }
+  }
+}

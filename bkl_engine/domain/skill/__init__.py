@@ -1,5 +1,19 @@
 """Skill domain primitives."""
 
-from bkl_engine.domain.skill.schemas import Skill, SkillLimits, SkillModelConfig
+from bkl_engine.domain.skill.schemas import (
+    Skill,
+    SkillExecutionConfig,
+    SkillLimits,
+    SkillModelConfig,
+    SkillWorkflowConfig,
+    SkillWorkflowStep,
+)
 
-__all__ = ["Skill", "SkillLimits", "SkillModelConfig"]
+__all__ = [
+    "Skill",
+    "SkillExecutionConfig",
+    "SkillLimits",
+    "SkillModelConfig",
+    "SkillWorkflowConfig",
+    "SkillWorkflowStep",
+]
