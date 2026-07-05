@@ -20,9 +20,9 @@ The main facade is `bkl_engine.engine.SkillEngine`.
 - `bkl_engine/cli/main.py`: Typer CLI entrypoint; command split files are placeholders for later.
 - `bkl_engine/storage/`: local artifact store, catalog store, and in-memory run store.
 - `bkl_engine/trace/`: in-memory trace store.
-- `examples/skills/`: sample Skill packages.
-- `examples/tools/`: sample Tool packages.
-- `examples/inputs/`: sample JSON inputs for CLI/manual tests.
+- `resources/skills/`: local Skill resource packages.
+- `resources/tools/`: local Tool resource packages.
+- `resources/inputs/`: sample JSON inputs for CLI/manual tests.
 - `tests/`: pytest suite, organized by subsystem.
 - `doc/`: architecture and project-structure notes. Some Chinese sections are currently mojibake;
   the English README section is the most reliable quick-start reference.
@@ -59,9 +59,9 @@ Useful CLI smoke tests:
 
 ```bash
 uv --cache-dir .uv-cache run --extra dev bkl --version
-uv --cache-dir .uv-cache run --extra dev bkl tool test examples/tools/subtitle_generate_srt examples/inputs/subtitle_input.json --output json
-uv --cache-dir .uv-cache run --extra dev bkl skill run talking-video examples/inputs/talking-video-input.json --skills-dir examples/skills --tools-dir examples/tools --output json
-uv --cache-dir .uv-cache run --extra dev bkl chat --once "generate a 60 second talking video about eye-friendly desk lamps for programmers" --skills-dir examples/skills --tools-dir examples/tools --output json
+uv --cache-dir .uv-cache run --extra dev bkl tool test resources/tools/subtitle_generate_srt resources/inputs/subtitle_input.json --output json
+uv --cache-dir .uv-cache run --extra dev bkl skill run talking-video resources/inputs/talking-video-input.json --skills-dir resources/skills --tools-dir resources/tools --output json
+uv --cache-dir .uv-cache run --extra dev bkl chat --once "generate a 60 second talking video about eye-friendly desk lamps for programmers" --skills-dir resources/skills --tools-dir resources/tools --output json
 ```
 
 The project declares `requires-python = ">=3.12"` in `pyproject.toml`.
@@ -82,7 +82,7 @@ from `wangbudong_write_prompt_pack` execution paths:
 - `tests/test_python_tool_runner.py::test_python_tool_runner_resolves_relative_artifact_dir_from_caller_cwd`
 - `tests/test_skill_runtime.py::test_skill_engine_runs_wangbudong-experiment_skill`
 
-The immediate cause is that `examples/tools/wangbudong_write_prompt_pack/main.py` contains
+The immediate cause is that `resources/tools/wangbudong_write_prompt_pack/main.py` contains
 mojibake and broken Python string literals, so the Python tool exits with code 1.
 
 ## Working Guidelines

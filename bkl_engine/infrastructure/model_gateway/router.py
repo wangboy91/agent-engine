@@ -2,6 +2,7 @@
 
 import json
 from collections import deque
+from collections.abc import Awaitable, Callable
 from typing import Any, Protocol
 
 from bkl_engine.domain.errors import BklEngineError
@@ -24,6 +25,7 @@ class ModelProvider(Protocol):
         profile: str,
         messages: list[dict[str, object]],
         tools: list[dict[str, object]],
+        stream_callback: Callable[[str], Awaitable[None]] | None = None,
     ) -> ModelResponse:
         ...
 
@@ -37,8 +39,9 @@ class MockModelProvider:
         profile: str,
         messages: list[dict[str, object]],
         tools: list[dict[str, object]],
+        stream_callback: Callable[[str], Awaitable[None]] | None = None,
     ) -> ModelResponse:
-        del profile
+        del profile, stream_callback
         if self._responses:
             return self._responses.popleft()
         return self._default_response(messages, tools)
@@ -388,99 +391,6 @@ class MockModelProvider:
                 )
             return {"render_prompt_pack": {"prompts": prompts}}
 
-        if "asset-manifest-builder" in prompt:
-            prompts = self._prompts(user_input)
-            assets = []
-            for index, prompt_item in enumerate(prompts):
-                assets.append(
-                    {
-                        "asset_id": f"a{index + 1}",
-                        "shot_id": str(prompt_item.get("shot_id") or f"sh{index + 1}"),
-                        "type": "video",
-                        "source": "generated",
-                        "status": "planned",
-                        "prompt": str(prompt_item.get("prompt") or ""),
-                        "duration": self._int_value(prompt_item.get("duration"), 6),
-                    }
-                )
-            assets.append(
-                {
-                    "asset_id": "audio_voiceover",
-                    "type": "audio",
-                    "source": "tts_or_recording",
-                    "status": "planned",
-                    "prompt": "Use the approved script as voiceover text.",
-                }
-            )
-            return {"asset_manifest": {"assets": assets}}
-
-        if "video-timeline-planner" in prompt:
-            shots = self._shots(user_input)
-            tracks = []
-            cursor = 0
-            for shot in shots:
-                duration = self._int_value(shot.get("duration"), 6)
-                tracks.append(
-                    {
-                        "track": "main_video",
-                        "shot_id": str(shot.get("shot_id") or "sh1"),
-                        "start": cursor,
-                        "end": cursor + duration,
-                    }
-                )
-                cursor += duration
-            return {
-                "timeline": {
-                    "duration_seconds": cursor or duration_seconds,
-                    "tracks": tracks,
-                },
-                "video_draft": {
-                    "status": "planned",
-                    "render_strategy": "先按分镜生成素材，再用字幕、旁白和 BGM 合成竖屏口播视频。",
-                    "deliverables": [
-                        "script.json",
-                        "storyboard.json",
-                        "asset_manifest.json",
-                        "timeline.json",
-                    ],
-                },
-            }
-
-        if "content-review-reporter" in prompt:
-            has_render_job = isinstance(user_input.get("render_job"), dict)
-            return {
-                "review_report": {
-                    "score": 90 if has_render_job else 86,
-                    "need_retry": False,
-                    "problems": [
-                        {
-                            "level": "low",
-                            "target": "asset_manifest",
-                            "problem": (
-                                "当前使用 mock 渲染工具，素材状态可追踪但不是真实 Provider 结果。"
-                                if has_render_job
-                                else "素材仍处于规划状态，尚未接入真实生成 Provider。"
-                            ),
-                            "suggestion": (
-                                "替换为真实视频生成 Provider Adapter 后复用同一 render_job 结构。"
-                                if has_render_job
-                                else "下一阶段接入视频生成和合成工具后再做画面级复盘。"
-                            ),
-                        }
-                    ],
-                    "strengths": [
-                        "链路完整",
-                        "每一步都有结构化资产",
-                        "后续可以按局部资产返工",
-                    ],
-                    "next_actions": [
-                        "确认脚本风格",
-                        "接入 TTS 或真人音频",
-                        "接入真实视频生成 Provider Adapter",
-                    ],
-                }
-            }
-
         return None
 
     def _best_hook(self, user_input: dict[str, Any], topic: str) -> str:
@@ -527,19 +437,6 @@ class MockModelProvider:
             }
         ]
 
-    def _prompts(self, user_input: dict[str, Any]) -> list[dict[str, object]]:
-        prompt_pack = user_input.get("render_prompt_pack")
-        if isinstance(prompt_pack, dict) and isinstance(prompt_pack.get("prompts"), list):
-            return [dict(item) for item in prompt_pack["prompts"] if isinstance(item, dict)]
-        return [
-            {
-                "shot_id": "sh1",
-                "duration": 5,
-                "prompt": str(user_input.get("topic") or "内容主题"),
-            }
-        ]
-
-
 class ModelRouter:
     def __init__(
         self,
@@ -567,6 +464,7 @@ class ModelRouter:
         profile: str,
         messages: list[dict[str, object]],
         tools: list[dict[str, object]],
+        stream_callback: Callable[[str], Awaitable[None]] | None = None,
     ) -> ModelResponse:
         provider_id = profile if profile in self.providers else self.active_profile
         provider = self.providers.get(provider_id)
@@ -575,7 +473,17 @@ class ModelRouter:
                 "CONFIG_INVALID",
                 f"Model profile is not configured: {provider_id}",
             )
-        return await provider.chat(provider_id, messages, tools)
+        try:
+            return await provider.chat(
+                provider_id,
+                messages,
+                tools,
+                stream_callback=stream_callback,
+            )
+        except TypeError as exc:
+            if "stream_callback" not in str(exc):
+                raise
+            return await provider.chat(provider_id, messages, tools)
 
 
 def _build_provider(profile: ModelProfileConfig) -> ModelProvider:

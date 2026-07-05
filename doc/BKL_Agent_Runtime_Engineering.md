@@ -488,7 +488,7 @@ POST /chat/messages
 ```json
 {
   "status": "requires_confirmation",
-  "message": "将导入 Skill examples/skills/foo 并写入 .bkl/catalog.json，是否继续？",
+  "message": "将导入 Skill resources/skills/foo 并写入 .bkl/catalog.json，是否继续？",
   "requires_confirmation": true,
   "confirmation": {
     "action_id": "act_xxx",

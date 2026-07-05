@@ -31,9 +31,9 @@ Architecture hardening roadmap: [BKL Business Agent Base Roadmap](BKL_Business_A
 - [x] `bkl init`
 - [x] `bkl serve`
 - [x] installation-form architecture document
-- [x] example Skill: `examples/skills/talking-video`
-- [x] example Skill: `examples/skills/wangbudong-experiment`
-- [x] example Tool: `examples/tools/wangbudong_write_prompt_pack`
+- [x] example Skill: `resources/skills/talking-video`
+- [x] example Skill: `resources/skills/wangbudong-experiment`
+- [x] example Tool: `resources/tools/wangbudong_write_prompt_pack`
 
 ## 2. Current Iteration: Persistent Catalog
 

@@ -159,7 +159,7 @@ def test_cli_register_commands_write_catalog(tmp_path) -> None:  # type: ignore[
         [
             "tool",
             "register",
-            "examples/tools/subtitle_generate_srt",
+            "resources/tools/subtitle_generate_srt",
             "--config",
             str(config_path),
             "--catalog",
@@ -171,7 +171,7 @@ def test_cli_register_commands_write_catalog(tmp_path) -> None:  # type: ignore[
         [
             "skill",
             "register",
-            "examples/skills/talking-video",
+            "resources/skills/talking-video",
             "--config",
             str(config_path),
             "--catalog",
@@ -184,9 +184,84 @@ def test_cli_register_commands_write_catalog(tmp_path) -> None:  # type: ignore[
     catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
     assert (
         catalog["tools"]["subtitle_generate_srt"]["path"]
-        == "examples/tools/subtitle_generate_srt"
+        == "resources/tools/subtitle_generate_srt"
     )
-    assert catalog["skills"]["talking-video"]["path"] == "examples/skills/talking-video"
+    assert catalog["skills"]["talking-video"]["path"] == "resources/skills/talking-video"
+
+
+def test_cli_workspace_scan_registers_resources_for_identity(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    config_path = _write_mock_config(tmp_path)
+    catalog_path = tmp_path / ".bkl" / "catalog.json"
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "workspace",
+            "scan",
+            "workspace_content_ops",
+            "identity_xhs_operator",
+            "--skills-dir",
+            "resources/skills",
+            "--tools-dir",
+            "resources/tools",
+            "--config",
+            str(config_path),
+            "--catalog",
+            str(catalog_path),
+            "--output",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert "content-video-workflow" in payload["registered_skills"]
+    assert "content-video-workflow" in payload["bound_skills"]
+    assert "mock_video_render" in payload["registered_tools"]
+    assert "mock_video_render" in payload["identity_tools"]
+
+
+def test_cli_workspace_registers_single_skill_and_tool_for_identity(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    config_path = _write_mock_config(tmp_path)
+    catalog_path = tmp_path / ".bkl" / "catalog.json"
+
+    skill_result = CliRunner().invoke(
+        app,
+        [
+            "workspace",
+            "register-skill",
+            "workspace_content_ops",
+            "identity_xhs_operator",
+            "resources/skills/talking-video",
+            "--config",
+            str(config_path),
+            "--catalog",
+            str(catalog_path),
+            "--output",
+            "json",
+        ],
+    )
+    tool_result = CliRunner().invoke(
+        app,
+        [
+            "workspace",
+            "register-tool",
+            "workspace_content_ops",
+            "identity_xhs_operator",
+            "resources/tools/subtitle_generate_srt",
+            "--config",
+            str(config_path),
+            "--catalog",
+            str(catalog_path),
+            "--output",
+            "json",
+        ],
+    )
+
+    assert skill_result.exit_code == 0
+    assert json.loads(skill_result.stdout)["skill"]["id"] == "talking-video"
+    assert tool_result.exit_code == 0
+    assert json.loads(tool_result.stdout)["tool"]["id"] == "subtitle_generate_srt"
 
 
 def _write_mock_config(tmp_path):  # type: ignore[no-untyped-def]

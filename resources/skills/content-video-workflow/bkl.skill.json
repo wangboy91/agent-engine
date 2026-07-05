@@ -67,42 +67,6 @@
         "depends_on": [
           "storyboard"
         ]
-      },
-      {
-        "id": "asset_manifest",
-        "skill_id": "asset-manifest-builder",
-        "description": "Create the managed asset list.",
-        "depends_on": [
-          "render_prompt_pack"
-        ]
-      },
-      {
-        "id": "timeline",
-        "skill_id": "video-timeline-planner",
-        "description": "Plan timeline and video draft.",
-        "depends_on": [
-          "script_segments",
-          "storyboard",
-          "asset_manifest"
-        ]
-      },
-      {
-        "id": "render_job",
-        "skill_id": "video-render-dispatcher",
-        "description": "Dispatch render prompts, assets, and timeline to a video render tool.",
-        "depends_on": [
-          "render_prompt_pack",
-          "asset_manifest",
-          "timeline"
-        ]
-      },
-      {
-        "id": "review_report",
-        "skill_id": "content-review-reporter",
-        "description": "Review the planned output.",
-        "depends_on": [
-          "render_job"
-        ]
       }
     ]
   },

@@ -3,6 +3,7 @@
 import json
 import os
 import re
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 import httpx
@@ -26,8 +27,9 @@ class AnthropicProvider:
         profile: str,
         messages: list[dict[str, object]],
         tools: list[dict[str, object]],
+        stream_callback: Callable[[str], Awaitable[None]] | None = None,
     ) -> ModelResponse:
-        del profile
+        del profile, stream_callback
         if self.config.base_url is None:
             raise BklEngineError("CONFIG_INVALID", "Anthropic base_url is required")
 

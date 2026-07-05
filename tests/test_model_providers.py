@@ -47,6 +47,45 @@ def test_openai_compatible_provider_posts_chat_completions(monkeypatch) -> None:
     assert response.usage.output_tokens == 2
 
 
+def test_openai_compatible_provider_streams_content_deltas(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.setenv("MODEL_KEY", "secret")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        assert body["stream"] is True
+        assert "tools" not in body
+        return httpx.Response(
+            200,
+            content=(
+                'data: {"choices":[{"delta":{"content":"{\\"ok\\""}}]}\n\n'
+                'data: {"choices":[{"delta":{"content":": true}"}}]}\n\n'
+                "data: [DONE]\n\n"
+            ),
+            headers={"content-type": "text/event-stream"},
+        )
+
+    provider = OpenAICompatibleProvider(
+        ModelProfileConfig(
+            protocol="openai-compatible",
+            base_url="https://example.com/v2",
+            api_key_env="MODEL_KEY",
+            model="astron-code-latest",
+        ),
+        client=httpx.AsyncClient(transport=httpx.MockTransport(handler)),
+    )
+    deltas: list[str] = []
+
+    async def collect(delta: str) -> None:
+        deltas.append(delta)
+
+    response = asyncio.run(
+        provider.chat("active", [{"role": "user", "content": "ping"}], [], collect)
+    )
+
+    assert deltas == ['{"ok"', ": true}"]
+    assert response.final_output == {"ok": True}
+
+
 def test_openai_compatible_provider_parses_fenced_json(monkeypatch) -> None:  # type: ignore[no-untyped-def]
     monkeypatch.setenv("MODEL_KEY", "secret")
 

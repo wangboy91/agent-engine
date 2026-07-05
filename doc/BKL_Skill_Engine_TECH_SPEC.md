@@ -1139,13 +1139,13 @@ bkl init
 bkl serve --host 127.0.0.1 --port 8000 --config bkl.yaml
 
 bkl tool register ./tools/subtitle_generate_srt
-bkl tool import-openapi ./examples/volc-openapi.json
+bkl tool import-openapi ./resources/volc-openapi.json
 bkl tool list
-bkl tool test subtitle_generate_srt ./examples/subtitle_input.json
+bkl tool test subtitle_generate_srt ./resources/subtitle_input.json
 
 bkl skill register ./skills/talking-video
 bkl skill list
-bkl skill run talking-video ./examples/talking_video_input.json
+bkl skill run talking-video ./resources/talking_video_input.json
 
 bkl run list
 bkl run show <run_id>
@@ -1224,7 +1224,7 @@ bkl-skill-engine/
       routes_skills.py
       routes_runs.py
 
-  examples/
+  resources/
     skills/
       talking-video/
         SKILL.md
@@ -1665,13 +1665,13 @@ bkl --version 可执行
 3. 支持读取 input.schema.json 和 output.schema.json。
 4. 校验必填字段：id、type、name、description、input_schema、output_schema。
 5. 添加测试用例。
-6. 在 examples/tools/subtitle_generate_srt 下创建一个示例 Tool。
+6. 在 resources/tools/subtitle_generate_srt 下创建一个示例 Tool。
 ```
 
 验收标准：
 
 ```text
-可以成功加载 examples/tools/subtitle_generate_srt/tool.yaml
+可以成功加载 resources/tools/subtitle_generate_srt/tool.yaml
 缺少必填字段时会报清晰错误
 pytest 通过
 ```
@@ -1722,7 +1722,7 @@ pytest 通过
 4. 支持读取 BKL bkl.skill.json。
 5. 支持读取 input.schema.json 和 output.schema.json。
 6. 支持 allowed_tools 配置。
-7. 添加 examples/skills/talking-video 示例。
+7. 添加 resources/skills/talking-video 示例。
 8. 添加测试用例。
 ```
 
@@ -2370,8 +2370,8 @@ storage:
   artifact_root: ./data/artifacts
 
 registries:
-  skills_dir: ./examples/skills
-  tools_dir: ./examples/tools
+  skills_dir: ./resources/skills
+  tools_dir: ./resources/tools
 
 models:
   default_profile: mock
@@ -2498,8 +2498,8 @@ P0 即使内部同步执行，也必须保存 `Run` 和 `Trace`，保证后续�
 CLI 命令必须能表达 API 的核心参数：
 
 ```bash
-bkl skill run talking-video ./examples/inputs/talking-video-input.json \
-  --context ./examples/inputs/context.json \
+bkl skill run talking-video ./resources/inputs/talking-video-input.json \
+  --context ./resources/inputs/context.json \
   --mode sync \
   --output json
 ```

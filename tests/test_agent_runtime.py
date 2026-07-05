@@ -9,8 +9,8 @@ from bkl_engine.engine import SkillEngine
 
 def test_agent_loop_runs_skill_from_scene_mapping_with_defaults(tmp_path: Path) -> None:
     engine = SkillEngine.create_for_testing(artifact_root=tmp_path)
-    asyncio.run(engine.register_tool("examples/tools/subtitle_generate_srt"))
-    asyncio.run(engine.register_skill("examples/skills/talking-video"))
+    asyncio.run(engine.register_tool("resources/tools/subtitle_generate_srt"))
+    asyncio.run(engine.register_skill("resources/skills/talking-video"))
     loop = AgentLoop(
         engine,
         scene_mapping=SceneMapping(
@@ -41,8 +41,8 @@ def test_agent_loop_runs_skill_from_scene_mapping_with_defaults(tmp_path: Path) 
 
 def test_agent_loop_routes_natural_language_to_registered_skill(tmp_path: Path) -> None:
     engine = SkillEngine.create_for_testing(artifact_root=tmp_path)
-    asyncio.run(engine.register_tool("examples/tools/wangbudong_write_prompt_pack"))
-    asyncio.run(engine.register_skill("examples/skills/wangbudong-experiment"))
+    asyncio.run(engine.register_tool("resources/tools/wangbudong_write_prompt_pack"))
+    asyncio.run(engine.register_skill("resources/skills/wangbudong-experiment"))
     loop = AgentLoop(engine)
 
     response = asyncio.run(
@@ -62,7 +62,7 @@ def test_agent_loop_routes_natural_language_to_registered_skill(tmp_path: Path) 
 
 def test_agent_loop_runs_content_video_workflow_from_plain_topic(tmp_path: Path) -> None:
     engine = SkillEngine.create_for_testing(artifact_root=tmp_path)
-    asyncio.run(engine.register_tool("examples/tools/mock_video_render"))
+    asyncio.run(engine.register_tool("resources/tools/mock_video_render"))
     for skill_id in [
         "content-brief-planner",
         "hook-plan-generator",
@@ -71,21 +71,16 @@ def test_agent_loop_runs_content_video_workflow_from_plain_topic(tmp_path: Path)
         "script-segmenter",
         "storyboard-designer",
         "render-prompt-builder",
-        "asset-manifest-builder",
-        "video-timeline-planner",
-        "video-render-dispatcher",
-        "content-review-reporter",
         "content-video-workflow",
     ]:
-        asyncio.run(engine.register_skill(f"examples/skills/{skill_id}"))
+        asyncio.run(engine.register_skill(f"resources/skills/{skill_id}"))
     loop = AgentLoop(engine)
 
-    response = asyncio.run(
-        loop.handle_message("介绍openspec", skill_id="content-video-workflow")
-    )
+    response = asyncio.run(loop.handle_message("介绍openspec"))
 
     assert response.status == "completed"
     assert response.route_decision is not None
+    assert response.route_decision.skill_id == "content-video-workflow"
     assert response.route_decision.input_draft["topic"] == "介绍openspec"
     assert response.route_decision.input_draft["platform"] == "xiaohongshu"
     assert response.route_decision.input_draft["duration_seconds"] == 60
@@ -94,10 +89,57 @@ def test_agent_loop_runs_content_video_workflow_from_plain_topic(tmp_path: Path)
     assert response.output["render_prompt_pack"]["prompts"]
 
 
+def test_agent_loop_routes_video_intro_to_content_workflow(tmp_path: Path) -> None:
+    engine = SkillEngine.create_for_testing(artifact_root=tmp_path)
+    for skill_id in [
+        "content-brief-planner",
+        "hook-plan-generator",
+        "style-bible-planner",
+        "talking-script-writer",
+        "script-segmenter",
+        "storyboard-designer",
+        "render-prompt-builder",
+        "content-video-workflow",
+        "talking-video",
+    ]:
+        asyncio.run(engine.register_skill(f"resources/skills/{skill_id}"))
+    loop = AgentLoop(engine)
+
+    response = asyncio.run(loop.handle_message("做个视频介绍openspec"))
+
+    assert response.status == "completed"
+    assert response.route_decision is not None
+    assert response.route_decision.skill_id == "content-video-workflow"
+    assert response.output is not None
+    assert response.output["render_prompt_pack"]["prompts"]
+
+
+def test_agent_loop_confirm_runs_low_confidence_candidate(tmp_path: Path) -> None:
+    engine = SkillEngine.create_for_testing(artifact_root=tmp_path)
+    asyncio.run(engine.register_tool("resources/tools/subtitle_generate_srt"))
+    asyncio.run(engine.register_skill("resources/skills/talking-video"))
+    loop = AgentLoop(engine)
+
+    waiting = asyncio.run(loop.handle_message("介绍openspec"))
+
+    assert waiting.status == "requires_confirmation"
+    assert waiting.requires_confirmation is True
+    assert waiting.confirmation is not None
+    assert waiting.route_decision is not None
+    assert waiting.route_decision.skill_id == "talking-video"
+
+    confirmed = asyncio.run(loop.handle_message("介绍openspec", confirm=True))
+
+    assert confirmed.status == "completed"
+    assert confirmed.route_decision is not None
+    assert confirmed.route_decision.skill_id == "talking-video"
+    assert confirmed.run_ids
+
+
 def test_agent_loop_asks_for_missing_required_skill_input(tmp_path: Path) -> None:
     engine = SkillEngine.create_for_testing(artifact_root=tmp_path)
-    asyncio.run(engine.register_tool("examples/tools/wangbudong_write_prompt_pack"))
-    asyncio.run(engine.register_skill("examples/skills/wangbudong-experiment"))
+    asyncio.run(engine.register_tool("resources/tools/wangbudong_write_prompt_pack"))
+    asyncio.run(engine.register_skill("resources/skills/wangbudong-experiment"))
     loop = AgentLoop(engine)
 
     response = asyncio.run(
@@ -112,10 +154,10 @@ def test_agent_loop_asks_for_missing_required_skill_input(tmp_path: Path) -> Non
 
 def test_agent_loop_routes_only_within_active_identity_catalog(tmp_path: Path) -> None:
     engine = SkillEngine.create_for_testing(artifact_root=tmp_path)
-    asyncio.run(engine.register_tool("examples/tools/subtitle_generate_srt"))
-    asyncio.run(engine.register_tool("examples/tools/wangbudong_write_prompt_pack"))
-    asyncio.run(engine.register_skill("examples/skills/talking-video"))
-    asyncio.run(engine.register_skill("examples/skills/wangbudong-experiment"))
+    asyncio.run(engine.register_tool("resources/tools/subtitle_generate_srt"))
+    asyncio.run(engine.register_tool("resources/tools/wangbudong_write_prompt_pack"))
+    asyncio.run(engine.register_skill("resources/skills/talking-video"))
+    asyncio.run(engine.register_skill("resources/skills/wangbudong-experiment"))
     engine.workspace_store.create_workspace("workspace_content_ops", "Content Ops")
     engine.workspace_store.create_identity(
         "workspace_content_ops",

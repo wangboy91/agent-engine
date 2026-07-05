@@ -3,6 +3,7 @@
 import asyncio
 import json
 import re
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from typing import cast
 from uuid import uuid4
@@ -573,6 +574,7 @@ class SkillRuntime:
                 skill,
                 messages,
                 self._tools_to_llm_schema(allowed_tools),
+                context,
             )
             usage.input_tokens += model_response.usage.input_tokens
             usage.output_tokens += model_response.usage.output_tokens
@@ -804,11 +806,18 @@ class SkillRuntime:
         skill: Skill,
         messages: list[dict[str, object]],
         tools: list[dict[str, object]],
+        context: RunContext | None,
     ) -> ModelResponse:
         max_attempts = skill.limits.max_model_retries + 1
+        stream_callback = self._model_stream_callback(run_id, skill, context)
         for attempt in range(1, max_attempts + 1):
             try:
-                return await self.model_router.chat(skill.model.profile, messages, tools)
+                return await self.model_router.chat(
+                    skill.model.profile,
+                    messages,
+                    tools,
+                    stream_callback=stream_callback,
+                )
             except BklEngineError as exc:
                 self.trace_store.record(
                     run_id,
@@ -835,6 +844,31 @@ class SkillRuntime:
                     },
                 )
         raise SkillRuntimeError("MODEL_PROVIDER_ERROR", "Model call failed")
+
+    def _model_stream_callback(
+        self,
+        run_id: str,
+        skill: Skill,
+        context: RunContext | None,
+    ) -> Callable[[str], Awaitable[None]] | None:
+        if context is None or not isinstance(context.metadata.get("stream_id"), str):
+            return None
+
+        async def record_delta(delta: str) -> None:
+            if not delta:
+                return
+            self.trace_store.record(
+                run_id,
+                "llm_delta",
+                "Model content delta",
+                {
+                    "skill_id": skill.id,
+                    "delta": delta,
+                    **self._context_trace_data(context),
+                },
+            )
+
+        return record_delta
 
     def _map_direct_tool_output(
         self,

@@ -20,6 +20,7 @@ from bkl_engine.domain.agent.schemas import (
     AgentMessage,
     AgentResponse,
     AgentTurn,
+    ConfirmationRequest,
     RouteDecision,
 )
 from bkl_engine.domain.execution import RunContext
@@ -61,7 +62,6 @@ class AgentLoop:
         context: RunContext | None = None,
         confirm: bool = False,
     ) -> AgentResponse:
-        del confirm
         resolved_session_id = session_id or f"sess_{uuid4().hex}"
         turn_id = f"turn_{uuid4().hex}"
         allowed_skill_ids = self._allowed_skill_ids(context)
@@ -83,13 +83,23 @@ class AgentLoop:
             self._record_session_turn(resolved_session_id, turn_id, message, response, context)
             return response
 
-        if route.confidence < self.auto_run_threshold and scene_id is None and skill_id is None:
+        if (
+            route.confidence < self.auto_run_threshold
+            and scene_id is None
+            and skill_id is None
+            and not confirm
+        ):
             response = AgentResponse(
                 session_id=resolved_session_id,
                 turn_id=turn_id,
                 status="requires_confirmation",
                 message=f"可能要运行 {route.skill_id}，但置信度较低，请确认。",
                 requires_confirmation=True,
+                confirmation=ConfirmationRequest(
+                    action_id=f"confirm_run_skill:{route.skill_id}",
+                    risk="low",
+                    message=f"确认运行 Skill: {route.skill_id}",
+                ),
                 route_decision=route,
             )
             self._record_session_turn(resolved_session_id, turn_id, message, response, context)

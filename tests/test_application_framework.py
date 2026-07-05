@@ -35,8 +35,8 @@ from bkl_engine.infrastructure.tool_runners.python_tool import PythonToolRunner
 
 def test_application_use_case_runs_explicit_skill(tmp_path: Path) -> None:
     engine = SkillEngine.create_for_testing(artifact_root=tmp_path)
-    asyncio.run(engine.register_tool("examples/tools/subtitle_generate_srt"))
-    asyncio.run(engine.register_skill("examples/skills/talking-video"))
+    asyncio.run(engine.register_tool("resources/tools/subtitle_generate_srt"))
+    asyncio.run(engine.register_skill("resources/skills/talking-video"))
 
     use_case = RunSkillUseCase(engine)
     result = asyncio.run(
@@ -60,8 +60,8 @@ def test_application_use_case_runs_explicit_skill(tmp_path: Path) -> None:
 
 def test_application_use_case_routes_agent_message_to_skill(tmp_path: Path) -> None:
     engine = SkillEngine.create_for_testing(artifact_root=tmp_path)
-    asyncio.run(engine.register_tool("examples/tools/subtitle_generate_srt"))
-    asyncio.run(engine.register_skill("examples/skills/talking-video"))
+    asyncio.run(engine.register_tool("resources/tools/subtitle_generate_srt"))
+    asyncio.run(engine.register_skill("resources/skills/talking-video"))
 
     use_case = HandleAgentMessageUseCase(engine)
     response = asyncio.run(
@@ -127,8 +127,8 @@ def test_tool_policy_denial_blocks_skill_run_and_records_trace(tmp_path: Path) -
             policy_engine=DenyEveryToolPolicy(),
         ),
     )
-    asyncio.run(engine.register_tool("examples/tools/subtitle_generate_srt"))
-    asyncio.run(engine.register_skill("examples/skills/talking-video"))
+    asyncio.run(engine.register_tool("resources/tools/subtitle_generate_srt"))
+    asyncio.run(engine.register_skill("resources/skills/talking-video"))
 
     with pytest.raises(SkillRuntimeError, match="TOOL_POLICY_DENIED"):
         asyncio.run(

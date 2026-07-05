@@ -14,6 +14,7 @@ from bkl_engine import __version__
 from bkl_engine.application.agent import HandleAgentMessageCommand, HandleAgentMessageUseCase
 from bkl_engine.application.skill import RunSkillCommand, RunSkillUseCase
 from bkl_engine.domain.errors import BklEngineError
+from bkl_engine.domain.policy import PolicyEffect
 from bkl_engine.domain.tool import ToolExecutionContext
 from bkl_engine.engine import SkillEngine
 from bkl_engine.infrastructure.package_loaders.skill_loader import load_skill
@@ -25,6 +26,7 @@ tool_app = typer.Typer(help="Tool commands.")
 skill_app = typer.Typer(help="Skill commands.")
 run_app = typer.Typer(help="Run commands.")
 trace_app = typer.Typer(help="Trace commands.")
+workspace_app = typer.Typer(help="Workspace and identity resource commands.")
 console = Console()
 MODEL_PROTOCOLS = {"mock", "openai-compatible", "anthropic"}
 DEFAULT_CONFIG_PATH = Path("bkl.yaml")
@@ -172,10 +174,10 @@ def chat(
         typer.Option("--input", help="Optional JSON input draft."),
     ] = None,
     skills_dir: Annotated[Path, typer.Option(help="Directory containing Skill packages.")] = (
-        Path("examples/skills")
+        Path("resources/skills")
     ),
     tools_dir: Annotated[Path, typer.Option(help="Directory containing Tool packages.")] = (
-        Path("examples/tools")
+        Path("resources/tools")
     ),
     config: Annotated[Path | None, typer.Option(help="Config file to load.")] = None,
     output: Annotated[str, typer.Option(help="Output format: table or json.")] = "table",
@@ -241,7 +243,7 @@ def tool_register(
 
 @tool_app.command("list")
 def tool_list(
-    tools_dir: Path = Path("examples/tools"),
+    tools_dir: Path = Path("resources/tools"),
     config: Annotated[Path | None, typer.Option(help="Config file to load.")] = None,
     catalog: Annotated[Path | None, typer.Option(help="Catalog file to read.")] = (
         DEFAULT_CATALOG_PATH
@@ -287,7 +289,7 @@ def skill_register(
 
 @skill_app.command("list")
 def skill_list(
-    skills_dir: Path = Path("examples/skills"),
+    skills_dir: Path = Path("resources/skills"),
     config: Annotated[Path | None, typer.Option(help="Config file to load.")] = None,
     catalog: Annotated[Path | None, typer.Option(help="Catalog file to read.")] = (
         DEFAULT_CATALOG_PATH
@@ -307,8 +309,8 @@ def skill_list(
 def skill_run(
     skill_id: str,
     input_json: Path,
-    skills_dir: Path = Path("examples/skills"),
-    tools_dir: Path = Path("examples/tools"),
+    skills_dir: Path = Path("resources/skills"),
+    tools_dir: Path = Path("resources/tools"),
     config: Path | None = None,
     output: str = "table",
 ) -> None:
@@ -337,6 +339,115 @@ def trace_show(run_id: str) -> None:
     console.print_json(
         data=[event.model_dump(mode="json") for event in engine.trace_store.list_events(run_id)]
     )
+
+
+@workspace_app.command("ensure")
+def workspace_ensure(
+    workspace_id: str,
+    identity_id: str,
+    workspace_name: Annotated[str | None, typer.Option(help="Workspace display name.")] = None,
+    identity_name: Annotated[str | None, typer.Option(help="Identity display name.")] = None,
+    config: Annotated[Path | None, typer.Option(help="Config file to load.")] = None,
+    catalog: Annotated[Path | None, typer.Option(help="Catalog file to load/write.")] = (
+        DEFAULT_CATALOG_PATH
+    ),
+    output: Annotated[str, typer.Option(help="Output format: table or json.")] = "table",
+) -> None:
+    engine = SkillEngine.load(config, catalog_path=catalog)
+    result = _ensure_workspace_identity(
+        engine,
+        workspace_id,
+        identity_id,
+        workspace_name,
+        identity_name,
+    )
+    _print_data(result, output)
+
+
+@workspace_app.command("scan")
+def workspace_scan(
+    workspace_id: str,
+    identity_id: str,
+    skills_dir: Annotated[
+        Path,
+        typer.Option(help="Directory containing Skill resource packages."),
+    ] = Path("resources/skills"),
+    tools_dir: Annotated[
+        Path | None,
+        typer.Option(help="Directory containing Tool resource packages."),
+    ] = Path("resources/tools"),
+    workspace_name: Annotated[str | None, typer.Option(help="Workspace display name.")] = None,
+    identity_name: Annotated[str | None, typer.Option(help="Identity display name.")] = None,
+    bind_to_identity: Annotated[
+        bool,
+        typer.Option(help="Bind scanned Skills to the identity."),
+    ] = True,
+    allow_tools_for_identity: Annotated[
+        bool,
+        typer.Option(help="Grant allow tool policies to the identity."),
+    ] = True,
+    config: Annotated[Path | None, typer.Option(help="Config file to load.")] = None,
+    catalog: Annotated[Path | None, typer.Option(help="Catalog file to load/write.")] = (
+        DEFAULT_CATALOG_PATH
+    ),
+    output: Annotated[str, typer.Option(help="Output format: table or json.")] = "table",
+) -> None:
+    engine = SkillEngine.load(config, catalog_path=catalog)
+    _ensure_workspace_identity(
+        engine,
+        workspace_id,
+        identity_id,
+        workspace_name,
+        identity_name,
+    )
+    result = _scan_workspace_resources(
+        engine,
+        workspace_id,
+        identity_id,
+        skills_dir,
+        tools_dir,
+        bind_to_identity=bind_to_identity,
+        allow_tools_for_identity=allow_tools_for_identity,
+    )
+    _print_data(result, output)
+
+
+@workspace_app.command("register-skill")
+def workspace_register_skill(
+    workspace_id: str,
+    identity_id: str,
+    path: Path,
+    config: Annotated[Path | None, typer.Option(help="Config file to load.")] = None,
+    catalog: Annotated[Path | None, typer.Option(help="Catalog file to load/write.")] = (
+        DEFAULT_CATALOG_PATH
+    ),
+    output: Annotated[str, typer.Option(help="Output format: table or json.")] = "table",
+) -> None:
+    engine = SkillEngine.load(config, catalog_path=catalog)
+    _ensure_workspace_identity(engine, workspace_id, identity_id, None, None)
+    result = _register_identity_skill(engine, workspace_id, identity_id, path)
+    _print_data(result, output)
+
+
+@workspace_app.command("register-tool")
+def workspace_register_tool(
+    workspace_id: str,
+    identity_id: str,
+    path: Path,
+    effect: Annotated[
+        PolicyEffect,
+        typer.Option(help="Tool policy effect for this identity."),
+    ] = "allow",
+    config: Annotated[Path | None, typer.Option(help="Config file to load.")] = None,
+    catalog: Annotated[Path | None, typer.Option(help="Catalog file to load/write.")] = (
+        DEFAULT_CATALOG_PATH
+    ),
+    output: Annotated[str, typer.Option(help="Output format: table or json.")] = "table",
+) -> None:
+    engine = SkillEngine.load(config, catalog_path=catalog)
+    _ensure_workspace_identity(engine, workspace_id, identity_id, None, None)
+    result = _register_identity_tool(engine, workspace_id, identity_id, path, effect)
+    _print_data(result, output)
 
 
 def _register_all(engine: SkillEngine, tools_dir: Path, skills_dir: Path) -> None:
@@ -385,6 +496,152 @@ def _print_error(exc: BklEngineError, output: str) -> None:
         typer.echo(json.dumps(data, ensure_ascii=False))
     else:
         console.print_json(data=data)
+
+
+def _print_data(data: dict[str, object], output: str) -> None:
+    if output == "json":
+        typer.echo(json.dumps(data, ensure_ascii=False))
+    else:
+        console.print_json(data=data)
+
+
+def _ensure_workspace_identity(
+    engine: SkillEngine,
+    workspace_id: str,
+    identity_id: str,
+    workspace_name: str | None,
+    identity_name: str | None,
+) -> dict[str, object]:
+    try:
+        workspace = engine.workspace_store.create_workspace(
+            workspace_id,
+            workspace_name or workspace_id,
+        )
+    except BklEngineError as exc:
+        if exc.code != "WORKSPACE_ALREADY_EXISTS":
+            raise
+        workspace = engine.workspace_store.get_workspace(workspace_id)
+
+    try:
+        identity = engine.workspace_store.create_identity(
+            workspace_id,
+            identity_id,
+            identity_name or identity_id,
+        )
+    except BklEngineError as exc:
+        if exc.code != "IDENTITY_ALREADY_EXISTS":
+            raise
+        identity = engine.workspace_store.get_identity(workspace_id, identity_id)
+
+    return {
+        "workspace": workspace.model_dump(mode="json"),
+        "identity": identity.model_dump(mode="json"),
+    }
+
+
+def _scan_workspace_resources(
+    engine: SkillEngine,
+    workspace_id: str,
+    identity_id: str,
+    skills_dir: Path,
+    tools_dir: Path | None,
+    bind_to_identity: bool,
+    allow_tools_for_identity: bool,
+) -> dict[str, object]:
+    registered_tool_ids: list[str] = []
+    identity_tool_ids: list[str] = []
+    if tools_dir is not None:
+        for tool_path in _iter_package_dirs(tools_dir, "tool.yaml"):
+            if allow_tools_for_identity:
+                result = _register_identity_tool(
+                    engine,
+                    workspace_id,
+                    identity_id,
+                    tool_path,
+                    "allow",
+                )
+                tool_data = result["tool"]
+                if isinstance(tool_data, dict):
+                    registered_tool_ids.append(str(tool_data["id"]))
+                    identity_tool_ids.append(str(tool_data["id"]))
+            else:
+                tool = asyncio.run(engine.register_tool(tool_path))
+                registered_tool_ids.append(tool.id)
+
+    registered_skill_ids: list[str] = []
+    installed_skill_ids: list[str] = []
+    bound_skill_ids: list[str] = []
+    for skill_path in _iter_package_dirs(skills_dir, "bkl.skill.json"):
+        skill = asyncio.run(engine.register_skill(skill_path))
+        registered_skill_ids.append(skill.id)
+        engine.workspace_store.install_skill(
+            workspace_id,
+            skill.id,
+            display_name=skill.name,
+            enabled=True,
+        )
+        installed_skill_ids.append(skill.id)
+        if bind_to_identity:
+            engine.workspace_store.bind_skill(workspace_id, identity_id, skill.id)
+            bound_skill_ids.append(skill.id)
+
+    return {
+        "workspace_id": workspace_id,
+        "identity_id": identity_id,
+        "skills_dir": skills_dir.as_posix(),
+        "tools_dir": tools_dir.as_posix() if tools_dir is not None else None,
+        "registered_tools": registered_tool_ids,
+        "identity_tools": identity_tool_ids,
+        "registered_skills": registered_skill_ids,
+        "installed_skills": installed_skill_ids,
+        "bound_skills": bound_skill_ids,
+    }
+
+
+def _register_identity_skill(
+    engine: SkillEngine,
+    workspace_id: str,
+    identity_id: str,
+    path: Path,
+) -> dict[str, object]:
+    skill = asyncio.run(engine.register_skill(path))
+    workspace_skill = engine.workspace_store.install_skill(
+        workspace_id,
+        skill.id,
+        display_name=skill.name,
+        enabled=True,
+    )
+    identity = engine.workspace_store.bind_skill(workspace_id, identity_id, skill.id)
+    return {
+        "workspace_id": workspace_id,
+        "identity_id": identity_id,
+        "skill": skill.model_dump(mode="json"),
+        "workspace_skill": workspace_skill.model_dump(mode="json"),
+        "identity": identity.model_dump(mode="json"),
+    }
+
+
+def _register_identity_tool(
+    engine: SkillEngine,
+    workspace_id: str,
+    identity_id: str,
+    path: Path,
+    effect: PolicyEffect,
+) -> dict[str, object]:
+    tool = asyncio.run(engine.register_tool(path))
+    rule = engine.policy_store.set_tool_rule(
+        tool.id,
+        effect,
+        workspace_id=workspace_id,
+        identity_id=identity_id,
+        reason="cli workspace registration",
+    )
+    return {
+        "workspace_id": workspace_id,
+        "identity_id": identity_id,
+        "tool": tool.model_dump(mode="json"),
+        "policy": rule.model_dump(mode="json"),
+    }
 
 
 def _agent_response_view(data: dict[str, object], view: str) -> dict[str, object]:
@@ -459,6 +716,7 @@ app.add_typer(tool_app, name="tool")
 app.add_typer(skill_app, name="skill")
 app.add_typer(run_app, name="run")
 app.add_typer(trace_app, name="trace")
+app.add_typer(workspace_app, name="workspace")
 
 
 if __name__ == "__main__":

@@ -14,8 +14,8 @@ from bkl_engine.infrastructure.model_gateway.router import MockModelProvider
 
 def test_skill_engine_runs_mock_skill_with_python_tool(tmp_path: Path) -> None:
     engine = SkillEngine.create_for_testing(artifact_root=tmp_path)
-    asyncio.run(engine.register_tool("examples/tools/subtitle_generate_srt"))
-    asyncio.run(engine.register_skill("examples/skills/talking-video"))
+    asyncio.run(engine.register_tool("resources/tools/subtitle_generate_srt"))
+    asyncio.run(engine.register_skill("resources/skills/talking-video"))
 
     result = asyncio.run(
         engine.run_skill(
@@ -46,8 +46,8 @@ def test_skill_engine_runs_mock_skill_with_python_tool(tmp_path: Path) -> None:
 
 def test_workspace_tool_policy_denies_tool_execution(tmp_path: Path) -> None:
     engine = SkillEngine.create_for_testing(artifact_root=tmp_path)
-    asyncio.run(engine.register_tool("examples/tools/subtitle_generate_srt"))
-    asyncio.run(engine.register_skill("examples/skills/talking-video"))
+    asyncio.run(engine.register_tool("resources/tools/subtitle_generate_srt"))
+    asyncio.run(engine.register_skill("resources/skills/talking-video"))
     engine.policy_store.set_tool_rule(
         "subtitle_generate_srt",
         "deny",
@@ -81,8 +81,8 @@ def test_workspace_tool_policy_denies_tool_execution(tmp_path: Path) -> None:
 
 def test_identity_tool_policy_overrides_workspace_policy(tmp_path: Path) -> None:
     engine = SkillEngine.create_for_testing(artifact_root=tmp_path)
-    asyncio.run(engine.register_tool("examples/tools/subtitle_generate_srt"))
-    asyncio.run(engine.register_skill("examples/skills/talking-video"))
+    asyncio.run(engine.register_tool("resources/tools/subtitle_generate_srt"))
+    asyncio.run(engine.register_skill("resources/skills/talking-video"))
     engine.policy_store.set_tool_rule(
         "subtitle_generate_srt",
         "deny",
@@ -123,8 +123,8 @@ def test_ask_tool_policy_creates_approval_and_approved_request_allows_rerun(
     tmp_path: Path,
 ) -> None:
     engine = SkillEngine.create_for_testing(artifact_root=tmp_path)
-    asyncio.run(engine.register_tool("examples/tools/subtitle_generate_srt"))
-    asyncio.run(engine.register_skill("examples/skills/talking-video"))
+    asyncio.run(engine.register_tool("resources/tools/subtitle_generate_srt"))
+    asyncio.run(engine.register_skill("resources/skills/talking-video"))
     engine.policy_store.set_tool_rule(
         "subtitle_generate_srt",
         "ask",
@@ -177,8 +177,8 @@ def test_ask_tool_policy_creates_approval_and_approved_request_allows_rerun(
 
 def test_skill_engine_runs_wangbudong_experiment_skill(tmp_path: Path) -> None:
     engine = SkillEngine.create_for_testing(artifact_root=tmp_path)
-    asyncio.run(engine.register_tool("examples/tools/wangbudong_write_prompt_pack"))
-    asyncio.run(engine.register_skill("examples/skills/wangbudong-experiment"))
+    asyncio.run(engine.register_tool("resources/tools/wangbudong_write_prompt_pack"))
+    asyncio.run(engine.register_skill("resources/skills/wangbudong-experiment"))
 
     result = asyncio.run(
         engine.run_skill(
@@ -228,7 +228,7 @@ def test_skill_runtime_normalizes_arrow_separated_string_array_output(tmp_path: 
         ]
     )
     engine = SkillEngine.create_for_testing(artifact_root=tmp_path, model_provider=provider)
-    asyncio.run(engine.register_skill("examples/skills/content-brief-planner"))
+    asyncio.run(engine.register_skill("resources/skills/content-brief-planner"))
 
     result = asyncio.run(
         engine.run_skill(
@@ -280,7 +280,7 @@ def test_content_brief_accepts_structured_recommended_structure(tmp_path: Path) 
         ]
     )
     engine = SkillEngine.create_for_testing(artifact_root=tmp_path, model_provider=provider)
-    asyncio.run(engine.register_skill("examples/skills/content-brief-planner"))
+    asyncio.run(engine.register_skill("resources/skills/content-brief-planner"))
 
     result = asyncio.run(
         engine.run_skill(
@@ -330,7 +330,7 @@ def test_style_bible_accepts_structured_typography_output(tmp_path: Path) -> Non
         ]
     )
     engine = SkillEngine.create_for_testing(artifact_root=tmp_path, model_provider=provider)
-    asyncio.run(engine.register_skill("examples/skills/style-bible-planner"))
+    asyncio.run(engine.register_skill("resources/skills/style-bible-planner"))
 
     result = asyncio.run(
         engine.run_skill(
@@ -376,7 +376,7 @@ def test_hook_plan_accepts_structured_hook_output(tmp_path: Path) -> None:
         ]
     )
     engine = SkillEngine.create_for_testing(artifact_root=tmp_path, model_provider=provider)
-    asyncio.run(engine.register_skill("examples/skills/hook-plan-generator"))
+    asyncio.run(engine.register_skill("resources/skills/hook-plan-generator"))
 
     result = asyncio.run(
         engine.run_skill(
@@ -413,7 +413,7 @@ def test_skill_runtime_normalizes_scalar_string_fields(tmp_path: Path) -> None:
         ]
     )
     engine = SkillEngine.create_for_testing(artifact_root=tmp_path, model_provider=provider)
-    asyncio.run(engine.register_skill("examples/skills/script-segmenter"))
+    asyncio.run(engine.register_skill("resources/skills/script-segmenter"))
 
     result = asyncio.run(
         engine.run_skill(
@@ -449,7 +449,7 @@ def test_script_segmenter_accepts_numeric_time_range(tmp_path: Path) -> None:
         ]
     )
     engine = SkillEngine.create_for_testing(artifact_root=tmp_path, model_provider=provider)
-    asyncio.run(engine.register_skill("examples/skills/script-segmenter"))
+    asyncio.run(engine.register_skill("resources/skills/script-segmenter"))
 
     result = asyncio.run(
         engine.run_skill(
@@ -491,7 +491,7 @@ def test_storyboard_accepts_multiple_assets_per_shot(tmp_path: Path) -> None:
         ]
     )
     engine = SkillEngine.create_for_testing(artifact_root=tmp_path, model_provider=provider)
-    asyncio.run(engine.register_skill("examples/skills/storyboard-designer"))
+    asyncio.run(engine.register_skill("resources/skills/storyboard-designer"))
 
     result = asyncio.run(
         engine.run_skill(
@@ -506,207 +506,6 @@ def test_storyboard_accepts_multiple_assets_per_shot(tmp_path: Path) -> None:
     assert result.status == "succeeded"
     assert result.output is not None
     assert result.output["storyboard"]["shots"][0]["asset_needed"][1] == "关键词标题贴纸"
-
-
-def test_skill_runtime_wraps_single_property_object_outputs(tmp_path: Path) -> None:
-    provider = MockModelProvider(
-        [
-            ModelResponse(
-                final_output={
-                    "assets": [
-                        {
-                            "asset_id": "asset_01",
-                            "type": "image",
-                            "source": "generated",
-                            "status": "planned",
-                            "prompt": "OpenSpec 产品界面演示",
-                        }
-                    ]
-                }
-            )
-        ]
-    )
-    engine = SkillEngine.create_for_testing(artifact_root=tmp_path, model_provider=provider)
-    asyncio.run(engine.register_skill("examples/skills/asset-manifest-builder"))
-
-    result = asyncio.run(
-        engine.run_skill(
-            "asset-manifest-builder",
-            {"render_prompt_pack": {"prompts": []}},
-        )
-    )
-
-    assert result.status == "succeeded"
-    assert result.output is not None
-    assert result.output["asset_manifest"]["assets"][0]["asset_id"] == "asset_01"
-
-
-def test_skill_runtime_drops_optional_null_object_fields(tmp_path: Path) -> None:
-    provider = MockModelProvider(
-        [
-            ModelResponse(
-                final_output={
-                    "asset_manifest": {
-                        "assets": [
-                            {
-                                "asset_id": "asset_01",
-                                "type": "audio",
-                                "source": "generated",
-                                "status": "planned",
-                                "shot_id": None,
-                            }
-                        ]
-                    }
-                }
-            )
-        ]
-    )
-    engine = SkillEngine.create_for_testing(artifact_root=tmp_path, model_provider=provider)
-    asyncio.run(engine.register_skill("examples/skills/asset-manifest-builder"))
-
-    result = asyncio.run(
-        engine.run_skill(
-            "asset-manifest-builder",
-            {"render_prompt_pack": {"prompts": []}},
-        )
-    )
-
-    assert result.status == "succeeded"
-    assert result.output is not None
-    assert "shot_id" not in result.output["asset_manifest"]["assets"][0]
-
-
-def test_timeline_accepts_structured_render_strategy(tmp_path: Path) -> None:
-    provider = MockModelProvider(
-        [
-            ModelResponse(
-                final_output={
-                    "timeline": {
-                        "duration_seconds": 60,
-                        "tracks": [],
-                    },
-                    "video_draft": {
-                        "status": "planned",
-                        "render_strategy": {
-                            "engine": "remotion",
-                            "resolution": "1080x1920",
-                            "fps": 30,
-                            "composition_steps": ["compose video", "overlay subtitles"],
-                        },
-                        "deliverables": [
-                            "final.mp4",
-                            {"format": "srt", "purpose": "外挂字幕文件（备用）"},
-                        ],
-                    },
-                }
-            )
-        ]
-    )
-    engine = SkillEngine.create_for_testing(artifact_root=tmp_path, model_provider=provider)
-    asyncio.run(engine.register_skill("examples/skills/video-timeline-planner"))
-
-    result = asyncio.run(
-        engine.run_skill(
-            "video-timeline-planner",
-            {
-                "script_segments": [],
-                "storyboard": {},
-                "asset_manifest": {"assets": []},
-            },
-        )
-    )
-
-    assert result.status == "succeeded"
-    assert result.output is not None
-    assert result.output["video_draft"]["render_strategy"]["engine"] == "remotion"
-    assert result.output["video_draft"]["deliverables"][1]["format"] == "srt"
-
-
-def test_content_review_reporter_accepts_structured_strengths_and_actions(
-    tmp_path: Path,
-) -> None:
-    provider = MockModelProvider(
-        [
-            ModelResponse(
-                final_output={
-                    "review_report": {
-                        "score": 88,
-                        "need_retry": False,
-                        "problems": [
-                            {
-                                "asset": "script_segments[7]",
-                                "description": "表达略显夸张。",
-                                "severity": "minor",
-                            }
-                        ],
-                        "strengths": [
-                            {
-                                "asset": "asset_manifest",
-                                "description": "资产清单完整，提示词可直接用于生产。",
-                            }
-                        ],
-                        "next_actions": [
-                            {
-                                "asset": "script_segments[7]",
-                                "action": "把夸张表述调整为专业表达。",
-                            }
-                        ],
-                    }
-                }
-            )
-        ]
-    )
-    engine = SkillEngine.create_for_testing(artifact_root=tmp_path, model_provider=provider)
-    asyncio.run(engine.register_skill("examples/skills/content-review-reporter"))
-
-    result = asyncio.run(
-        engine.run_skill(
-            "content-review-reporter",
-            {
-                "content_brief": {},
-                "script": {},
-                "storyboard": {},
-                "asset_manifest": {},
-                "timeline": {},
-            },
-        )
-    )
-
-    assert result.status == "succeeded"
-    assert result.output is not None
-    assert result.output["review_report"]["strengths"][0]["asset"] == "asset_manifest"
-    assert result.output["review_report"]["next_actions"][0]["asset"] == "script_segments[7]"
-
-
-def test_render_dispatcher_runs_direct_tool_without_model_call(tmp_path: Path) -> None:
-    engine = SkillEngine.create_for_testing(
-        artifact_root=tmp_path,
-        model_provider=FailingModelProvider(),
-    )
-    asyncio.run(engine.register_tool("examples/tools/mock_video_render"))
-    asyncio.run(engine.register_skill("examples/skills/video-render-dispatcher"))
-
-    result = asyncio.run(
-        engine.run_skill(
-            "video-render-dispatcher",
-            {
-                "render_prompt_pack": {"prompts": []},
-                "asset_manifest": {"assets": []},
-                "timeline": {"duration_seconds": 0, "tracks": []},
-                "video_draft": {},
-            },
-        )
-    )
-
-    assert result.status == "succeeded"
-    assert result.output is not None
-    assert result.output["render_job"]["render_job_id"].startswith("render_tool_")
-    assert result.output["render_job"]["status"] == "succeeded"
-    assert result.output["video_draft"]["status"] == "rendered"
-    assert Path(result.output["render_job"]["video_path"]).exists()
-    assert result.trace_summary["llm_called"] == 0
-    assert result.trace_summary["tool_called"] == 1
-    assert result.trace_summary["tool_succeeded"] == 1
 
 
 def test_workflow_runs_ready_dag_steps_in_parallel(tmp_path: Path) -> None:
@@ -728,7 +527,7 @@ def test_workflow_runs_ready_dag_steps_in_parallel(tmp_path: Path) -> None:
 
 def test_skill_started_trace_includes_workspace_identity_context(tmp_path: Path) -> None:
     engine = SkillEngine.create_for_testing(artifact_root=tmp_path)
-    asyncio.run(engine.register_skill("examples/skills/content-brief-planner"))
+    asyncio.run(engine.register_skill("resources/skills/content-brief-planner"))
 
     result = asyncio.run(
         engine.run_skill(
@@ -760,13 +559,13 @@ def test_skill_started_trace_includes_workspace_identity_context(tmp_path: Path)
 def test_skill_runtime_schema_error_includes_output_preview(tmp_path: Path) -> None:
     provider = MockModelProvider([ModelResponse(final_output={"text": "not the expected object"})])
     engine = SkillEngine.create_for_testing(artifact_root=tmp_path, model_provider=provider)
-    asyncio.run(engine.register_skill("examples/skills/asset-manifest-builder"))
+    asyncio.run(engine.register_skill("resources/skills/render-prompt-builder"))
 
     with pytest.raises(SkillRuntimeError) as exc_info:
         asyncio.run(
             engine.run_skill(
-                "asset-manifest-builder",
-                {"render_prompt_pack": {"prompts": []}},
+                "render-prompt-builder",
+                {"storyboard": {"shots": []}, "style_bible": {}},
             )
         )
 
@@ -781,8 +580,8 @@ def test_workflow_step_failure_includes_step_context(tmp_path: Path) -> None:
         artifact_root=tmp_path,
         model_provider=FailingModelProvider(),
     )
-    asyncio.run(engine.register_skill("examples/skills/content-brief-planner"))
-    asyncio.run(engine.register_skill("examples/skills/content-video-workflow"))
+    asyncio.run(engine.register_skill("resources/skills/content-brief-planner"))
+    asyncio.run(engine.register_skill("resources/skills/content-video-workflow"))
 
     with pytest.raises(SkillRuntimeError) as exc_info:
         asyncio.run(
@@ -805,7 +604,7 @@ def test_workflow_step_failure_includes_step_context(tmp_path: Path) -> None:
 def test_skill_runtime_retries_retryable_model_errors(tmp_path: Path) -> None:
     provider = RetryOnceModelProvider()
     engine = SkillEngine.create_for_testing(artifact_root=tmp_path, model_provider=provider)
-    asyncio.run(engine.register_skill("examples/skills/content-brief-planner"))
+    asyncio.run(engine.register_skill("resources/skills/content-brief-planner"))
 
     result = asyncio.run(
         engine.run_skill(
@@ -841,8 +640,8 @@ def test_skill_runtime_rejects_tool_not_allowed(tmp_path: Path) -> None:
             ]
         ),
     )
-    asyncio.run(engine.register_tool("examples/tools/subtitle_generate_srt"))
-    asyncio.run(engine.register_skill("examples/skills/talking-video"))
+    asyncio.run(engine.register_tool("resources/tools/subtitle_generate_srt"))
+    asyncio.run(engine.register_skill("resources/skills/talking-video"))
 
     with pytest.raises(SkillRuntimeError, match="TOOL_NOT_ALLOWED"):
         asyncio.run(
@@ -868,8 +667,8 @@ def test_skill_runtime_stops_at_max_iterations(tmp_path: Path) -> None:
             ]
         ),
     )
-    asyncio.run(engine.register_tool("examples/tools/subtitle_generate_srt"))
-    asyncio.run(engine.register_skill("examples/skills/talking-video"))
+    asyncio.run(engine.register_tool("resources/tools/subtitle_generate_srt"))
+    asyncio.run(engine.register_skill("resources/skills/talking-video"))
 
     with pytest.raises(SkillRuntimeError, match="MAX_ITERATIONS_EXCEEDED"):
         asyncio.run(
@@ -887,8 +686,8 @@ def test_skill_runtime_stops_at_max_iterations(tmp_path: Path) -> None:
 def test_skill_runtime_appends_assistant_tool_call_message(tmp_path: Path) -> None:
     provider = RecordingToolCallProvider()
     engine = SkillEngine.create_for_testing(artifact_root=tmp_path, model_provider=provider)
-    asyncio.run(engine.register_tool("examples/tools/subtitle_generate_srt"))
-    asyncio.run(engine.register_skill("examples/skills/talking-video"))
+    asyncio.run(engine.register_tool("resources/tools/subtitle_generate_srt"))
+    asyncio.run(engine.register_skill("resources/skills/talking-video"))
 
     result = asyncio.run(
         engine.run_skill(

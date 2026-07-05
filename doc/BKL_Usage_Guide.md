@@ -78,8 +78,8 @@ bkl --version
 
 ```bash
 bkl tool test \
-  examples/tools/subtitle_generate_srt \
-  examples/inputs/subtitle_input.json \
+  resources/tools/subtitle_generate_srt \
+  resources/inputs/subtitle_input.json \
   --output json
 ```
 
@@ -88,9 +88,9 @@ bkl tool test \
 ```bash
 bkl skill run \
   talking-video \
-  examples/inputs/talking-video-input.json \
-  --skills-dir examples/skills \
-  --tools-dir examples/tools \
+  resources/inputs/talking-video-input.json \
+  --skills-dir resources/skills \
+  --tools-dir resources/tools \
   --output json
 ```
 
@@ -107,13 +107,13 @@ bkl skill run \
 ```bash
 bkl skill run \
   content-video-workflow \
-  examples/inputs/content-video-workflow-input.json \
-  --skills-dir examples/skills \
-  --tools-dir examples/tools \
+  resources/inputs/content-video-workflow-input.json \
+  --skills-dir resources/skills \
+  --tools-dir resources/tools \
   --output json
 ```
 
-该工作流会输出脚本、分镜、渲染提示词、素材清单、时间轴、`render_job`、`video_draft` 和复盘报告。示例渲染步骤使用 `mock_video_render` 写出本地 mock 视频文件和 render manifest。
+该工作流会输出脚本、分镜和渲染提示词。后续真实视频生成、TTS、FFmpeg 或 Remotion 合成可以作为独立 Provider Adapter 或下游工作流继续接入。
 
 ## 4. Agent 自然语言调用
 
@@ -122,8 +122,8 @@ bkl skill run \
 ```bash
 bkl chat \
   --once "帮我生成60秒小红书口播视频，主题是程序员护眼台灯" \
-  --skills-dir examples/skills \
-  --tools-dir examples/tools \
+  --skills-dir resources/skills \
+  --tools-dir resources/tools \
   --output json
 ```
 
@@ -137,8 +137,8 @@ bkl chat \
 bkl chat \
   --once "介绍openspec" \
   --skill content-video-workflow \
-  --skills-dir examples/skills \
-  --tools-dir examples/tools \
+  --skills-dir resources/skills \
+  --tools-dir resources/tools \
   --config bkl.yaml \
   --view prompts \
   --output json
@@ -159,8 +159,8 @@ bkl chat \
 bkl chat \
   --once "介绍openspec" \
   --skill content-video-workflow \
-  --skills-dir examples/skills \
-  --tools-dir examples/tools \
+  --skills-dir resources/skills \
+  --tools-dir resources/tools \
   --config bkl.yaml \
   --view trace \
   --output json
@@ -180,9 +180,9 @@ bkl chat \
 bkl chat \
   --once "主题是程序员护眼台灯" \
   --skill talking-video \
-  --input examples/inputs/talking-video-input.json \
-  --skills-dir examples/skills \
-  --tools-dir examples/tools \
+  --input resources/inputs/talking-video-input.json \
+  --skills-dir resources/skills \
+  --tools-dir resources/tools \
   --output json
 ```
 
@@ -210,7 +210,7 @@ bkl serve --host 127.0.0.1 --port 8000 --config bkl.yaml
 ```bash
 curl -X POST http://127.0.0.1:8000/tools/register \
   -H 'Content-Type: application/json' \
-  -d '{"path":"examples/tools/subtitle_generate_srt"}'
+  -d '{"path":"resources/tools/subtitle_generate_srt"}'
 ```
 
 注册示例 Skill：
@@ -218,10 +218,10 @@ curl -X POST http://127.0.0.1:8000/tools/register \
 ```bash
 curl -X POST http://127.0.0.1:8000/skills/register \
   -H 'Content-Type: application/json' \
-  -d '{"path":"examples/skills/talking-video"}'
+  -d '{"path":"resources/skills/talking-video"}'
 ```
 
-注册内容视频工作流需要同时注册 `examples/tools` 和 `examples/skills` 中相关包。CLI 示例会自动扫描目录；HTTP 服务更适合先通过 catalog 持久化注册结果。
+注册内容视频工作流需要同时注册 `resources/tools` 和 `resources/skills` 中相关包。CLI 示例会自动扫描目录；HTTP 服务更适合先通过 catalog 持久化注册结果。
 
 ## 7. HTTP 调用
 

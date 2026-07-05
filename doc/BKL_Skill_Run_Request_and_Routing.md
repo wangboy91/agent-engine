@@ -39,7 +39,7 @@ examples.json
 
 ## 2. 当前 talking-video 示例
 
-`examples/skills/talking-video/bkl.skill.json` 里声明：
+`resources/skills/talking-video/bkl.skill.json` 里声明：
 
 ```json
 {
@@ -128,9 +128,9 @@ talking-video
 CLI 当前是显式指定 Skill：
 
 ```bash
-bkl skill run talking-video examples/inputs/talking-video-input.json \
-  --skills-dir examples/skills \
-  --tools-dir examples/tools \
+bkl skill run talking-video resources/inputs/talking-video-input.json \
+  --skills-dir resources/skills \
+  --tools-dir resources/tools \
   --output json
 ```
 
@@ -140,7 +140,7 @@ bkl skill run talking-video examples/inputs/talking-video-input.json \
 talking-video
   要运行的 skill_id。
 
-examples/inputs/talking-video-input.json
+resources/inputs/talking-video-input.json
   请求入参，必须符合 talking-video/input.schema.json。
 
 --skills-dir

@@ -68,7 +68,7 @@ trace/events.py
 bkl_engine/
   Core Engine 源码
 
-examples/
+resources/
   示例 Tool、Skill、输入文件
 
 tests/
@@ -599,10 +599,10 @@ policy/policy_engine.py
 
 当前已接入 `ToolExecutor`，默认策略为 allow，方便保持 v0.1 本地行为不变。产品部署和后续迭代可以注入更严格策略，实现 allow / ask / deny。
 
-## 4. examples 目录
+## 4. resources 目录
 
 ```text
-examples/
+resources/
   inputs/
   skills/
   tools/
@@ -611,9 +611,9 @@ examples/
 ### 4.1 inputs
 
 ```text
-examples/inputs/talking-video-input.json
-examples/inputs/wangbudong-experiment-input.json
-examples/inputs/subtitle_input.json
+resources/inputs/talking-video-input.json
+resources/inputs/wangbudong-experiment-input.json
+resources/inputs/subtitle_input.json
 ```
 
 用于 CLI/API 测试。
@@ -621,31 +621,31 @@ examples/inputs/subtitle_input.json
 ### 4.2 skills
 
 ```text
-examples/skills/talking-video/
+resources/skills/talking-video/
   SKILL.md
   bkl.skill.json
-  input.schema.json
-  output.schema.json
-  examples.json
+  schemas/input.schema.json
+  schemas/output.schema.json
+  examples/examples.json
 
-examples/skills/wangbudong-experiment/
+resources/skills/wangbudong-experiment/
   SKILL.md
   bkl.skill.json
-  input.schema.json
-  output.schema.json
-  examples.json
+  schemas/input.schema.json
+  schemas/output.schema.json
+  examples/examples.json
 ```
 
 ### 4.3 tools
 
 ```text
-examples/tools/subtitle_generate_srt/
+resources/tools/subtitle_generate_srt/
   tool.yaml
   input.schema.json
   output.schema.json
   main.py
 
-examples/tools/wangbudong_write_prompt_pack/
+resources/tools/wangbudong_write_prompt_pack/
   tool.yaml
   input.schema.json
   output.schema.json

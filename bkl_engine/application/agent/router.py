@@ -73,7 +73,15 @@ class SkillRouter:
                 reason="no skill matched the request",
             )
 
-        if len(scored) > 1 and best_score - scored[1][0] < 0.12:
+        if (
+            len(scored) > 1
+            and best_score - scored[1][0] < 0.12
+            and not (best_skill_id == "content-video-workflow" and "介绍" in message)
+            and not (
+                best_skill_id == "talking-video"
+                and ("口播" in message or "秒" in message)
+            )
+        ):
             best_score = min(best_score, 0.74)
 
         return RouteDecision(
@@ -103,14 +111,22 @@ class SkillRouter:
             "talking-video": ["口播", "视频", "小红书", "抖音", "b站", "微博", "秒"],
             "content-video-workflow": [
                 "想法",
+                "介绍",
+                "视频",
+                "短视频",
+                "口播",
                 "脚本",
                 "分镜",
+                "提示词",
+                "渲染提示词",
                 "素材",
                 "成片",
                 "复盘",
                 "工作流",
                 "内容生产",
                 "课程",
+                "小红书",
+                "抖音",
             ],
         }
         keywords = keyword_groups.get(skill_id, [])
@@ -118,6 +134,9 @@ class SkillRouter:
         if matched_keywords:
             score = max(score, 0.65)
             score += len(matched_keywords) * 0.1
+
+        if skill_id == "content-video-workflow" and "介绍" in text:
+            score = max(score, 0.86)
 
         for token in ("video", "experiment", "skill", "tool"):
             if token in text and token in metadata:

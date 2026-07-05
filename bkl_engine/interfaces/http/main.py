@@ -14,6 +14,7 @@ from starlette.responses import FileResponse, StreamingResponse
 
 from bkl_engine.application.agent import HandleAgentMessageCommand, HandleAgentMessageUseCase
 from bkl_engine.application.skill import RunSkillCommand, RunSkillUseCase
+from bkl_engine.domain.agent.schemas import AgentResponse
 from bkl_engine.domain.errors import BklEngineError
 from bkl_engine.domain.execution import RunContext, TraceEvent
 from bkl_engine.domain.policy import PolicyEffect, ToolApprovalStatus
@@ -53,10 +54,24 @@ class UpdateWorkspaceSkillRequest(BaseModel):
 
 
 class ScanWorkspaceSkillsRequest(BaseModel):
-    skills_dir: str = "examples/skills"
-    tools_dir: str | None = "examples/tools"
+    skills_dir: str = "resources/skills"
+    tools_dir: str | None = "resources/tools"
     identity_id: str | None = None
     bind_to_identity: bool = True
+    allow_tools_for_identity: bool = True
+    enabled: bool = True
+
+
+class RegisterIdentitySkillRequest(BaseModel):
+    path: str
+    enabled: bool = True
+
+
+class RegisterIdentityToolRequest(BaseModel):
+    path: str
+    effect: PolicyEffect = "allow"
+    reason: str = "identity resource registration"
+    risk: str = "none"
     enabled: bool = True
 
 
@@ -185,22 +200,6 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
         except BklEngineError as exc:
             raise HTTPException(status_code=404, detail=exc.message) from exc
 
-    @api.patch("/workspaces/{workspace_id}/skills/{skill_id}")
-    def update_workspace_skill(
-        workspace_id: str,
-        skill_id: str,
-        request: UpdateWorkspaceSkillRequest,
-    ) -> dict[str, Any]:
-        try:
-            workspace_skill = _engine(api).workspace_store.set_skill_enabled(
-                workspace_id,
-                skill_id,
-                request.enabled,
-            )
-            return workspace_skill.model_dump(mode="json")
-        except BklEngineError as exc:
-            raise HTTPException(status_code=400, detail=exc.message) from exc
-
     @api.post("/workspaces/{workspace_id}/skills/scan")
     async def scan_workspace_skills(
         workspace_id: str,
@@ -213,10 +212,23 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
                 engine.workspace_store.get_identity(workspace_id, request.identity_id)
 
             registered_tool_ids: list[str] = []
+            identity_tool_ids: list[str] = []
             if request.tools_dir is not None:
                 for tool_path in _iter_package_dirs(Path(request.tools_dir), "tool.yaml"):
                     tool = await engine.register_tool(str(tool_path))
                     registered_tool_ids.append(tool.id)
+                    if (
+                        request.allow_tools_for_identity
+                        and request.identity_id is not None
+                    ):
+                        _allow_identity_tool(
+                            engine,
+                            workspace_id,
+                            request.identity_id,
+                            tool.id,
+                            reason="workspace resource scan",
+                        )
+                        identity_tool_ids.append(tool.id)
 
             registered_skill_ids: list[str] = []
             installed_skill_ids: list[str] = []
@@ -241,9 +253,81 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
                 "skills_dir": request.skills_dir,
                 "tools_dir": request.tools_dir,
                 "registered_tools": registered_tool_ids,
+                "identity_tools": identity_tool_ids,
                 "registered_skills": registered_skill_ids,
                 "installed_skills": installed_skill_ids,
                 "bound_skills": bound_skill_ids,
+            }
+        except BklEngineError as exc:
+            raise HTTPException(status_code=400, detail=exc.message) from exc
+
+    @api.patch("/workspaces/{workspace_id}/skills/{skill_id}")
+    def update_workspace_skill(
+        workspace_id: str,
+        skill_id: str,
+        request: UpdateWorkspaceSkillRequest,
+    ) -> dict[str, Any]:
+        try:
+            workspace_skill = _engine(api).workspace_store.set_skill_enabled(
+                workspace_id,
+                skill_id,
+                request.enabled,
+            )
+            return workspace_skill.model_dump(mode="json")
+        except BklEngineError as exc:
+            raise HTTPException(status_code=400, detail=exc.message) from exc
+
+    @api.post("/workspaces/{workspace_id}/identities/{identity_id}/skills/register")
+    async def register_identity_skill(
+        workspace_id: str,
+        identity_id: str,
+        request: RegisterIdentitySkillRequest,
+    ) -> dict[str, Any]:
+        try:
+            engine = _engine(api)
+            engine.workspace_store.get_identity(workspace_id, identity_id)
+            skill = await engine.register_skill(request.path)
+            workspace_skill = engine.workspace_store.install_skill(
+                workspace_id,
+                skill.id,
+                display_name=skill.name,
+                enabled=request.enabled,
+            )
+            identity = engine.workspace_store.bind_skill(workspace_id, identity_id, skill.id)
+            return {
+                "workspace_id": workspace_id,
+                "identity_id": identity_id,
+                "skill": skill.model_dump(mode="json"),
+                "workspace_skill": workspace_skill.model_dump(mode="json"),
+                "identity": identity.model_dump(mode="json"),
+            }
+        except BklEngineError as exc:
+            raise HTTPException(status_code=400, detail=exc.message) from exc
+
+    @api.post("/workspaces/{workspace_id}/identities/{identity_id}/tools/register")
+    async def register_identity_tool(
+        workspace_id: str,
+        identity_id: str,
+        request: RegisterIdentityToolRequest,
+    ) -> dict[str, Any]:
+        try:
+            engine = _engine(api)
+            engine.workspace_store.get_identity(workspace_id, identity_id)
+            tool = await engine.register_tool(request.path)
+            rule = engine.policy_store.set_tool_rule(
+                tool.id,
+                request.effect,
+                workspace_id=workspace_id,
+                identity_id=identity_id,
+                reason=request.reason,
+                risk=request.risk,
+                enabled=request.enabled,
+            )
+            return {
+                "workspace_id": workspace_id,
+                "identity_id": identity_id,
+                "tool": tool.model_dump(mode="json"),
+                "policy": rule.model_dump(mode="json"),
             }
         except BklEngineError as exc:
             raise HTTPException(status_code=400, detail=exc.message) from exc
@@ -581,6 +665,24 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
                     return
                 finally:
                     _cancel_if_running(task)
+            if response.status == "completed":
+                for chunk in _markdown_chunks(_agent_response_markdown(response)):
+                    yield _sse_event(
+                        "markdown_delta",
+                        {
+                            "message_id": response.turn_id,
+                            "role": "assistant",
+                            "delta": chunk,
+                        },
+                    )
+                    await asyncio.sleep(0)
+                yield _sse_event(
+                    "markdown_completed",
+                    {
+                        "message_id": response.turn_id,
+                        "role": "assistant",
+                    },
+                )
             yield _sse_event("agent_completed", response.model_dump(mode="json"))
 
         return StreamingResponse(stream(), media_type="text/event-stream")
@@ -763,6 +865,22 @@ def _iter_package_dirs(root: Path, marker: str) -> list[Path]:
     return sorted({path.parent for path in root.rglob(marker)})
 
 
+def _allow_identity_tool(
+    engine: SkillEngine,
+    workspace_id: str,
+    identity_id: str,
+    tool_id: str,
+    reason: str,
+) -> None:
+    engine.policy_store.set_tool_rule(
+        tool_id,
+        "allow",
+        workspace_id=workspace_id,
+        identity_id=identity_id,
+        reason=reason,
+    )
+
+
 def _new_stream_id() -> str:
     return f"stream_{uuid4().hex}"
 
@@ -819,6 +937,150 @@ def _should_emit_trace_event(
 def _cancel_if_running(task: asyncio.Task[Any]) -> None:
     if not task.done():
         task.cancel()
+
+
+def _markdown_chunks(markdown: str, chunk_size: int = 480) -> list[str]:
+    if not markdown:
+        return []
+    return [
+        markdown[index : index + chunk_size]
+        for index in range(0, len(markdown), chunk_size)
+    ]
+
+
+def _agent_response_markdown(response: AgentResponse) -> str:
+    output = response.output or {}
+    route_decision = response.route_decision
+    skill_id = route_decision.skill_id if route_decision else None
+    lines = [
+        "### 运行结果",
+        "",
+        f"- 状态：{_status_label(response.status)}",
+        f"- Skill：`{skill_id or 'unknown'}`",
+    ]
+
+    _append_script(lines, output)
+    _append_titles(lines, output)
+    _append_subtitle(lines, output)
+    _append_segments(lines, output)
+    _append_storyboard(lines, output)
+    _append_prompt_pack(lines, output)
+
+    if len(lines) <= 4:
+        lines.extend(
+            [
+                "",
+                "#### JSON 输出",
+                "",
+                "```json",
+                json.dumps(output, ensure_ascii=False, indent=2),
+                "```",
+            ]
+        )
+
+    if response.artifacts:
+        lines.extend(["", "#### 产物", ""])
+        for artifact in response.artifacts:
+            uri = artifact.get("uri") or artifact.get("name") or artifact.get("id")
+            if uri:
+                lines.append(f"- `{uri}`")
+    return "\n".join(lines)
+
+
+def _append_script(lines: list[str], output: dict[str, Any]) -> None:
+    script = output.get("script")
+    if isinstance(script, dict):
+        full_text = script.get("full_text")
+        if full_text:
+            lines.extend(["", "#### 口播脚本", "", str(full_text)])
+    elif script:
+        lines.extend(["", "#### 脚本", "", str(script)])
+
+
+def _append_titles(lines: list[str], output: dict[str, Any]) -> None:
+    titles = output.get("titles")
+    if not isinstance(titles, list) or not titles:
+        return
+    lines.extend(["", "#### 标题", ""])
+    for title in titles:
+        lines.append(f"- {title}")
+
+
+def _append_subtitle(lines: list[str], output: dict[str, Any]) -> None:
+    subtitle_path = output.get("subtitle_path")
+    if subtitle_path:
+        lines.extend(["", "#### 字幕", "", f"- `{subtitle_path}`"])
+
+
+def _append_segments(lines: list[str], output: dict[str, Any]) -> None:
+    script_segments = _list_of_objects(output.get("script_segments"))
+    if script_segments:
+        lines.extend(["", "#### 脚本分段", ""])
+        for segment in script_segments[:8]:
+            time_range = segment.get("time_range") or segment.get("start") or ""
+            text = (
+                segment.get("spoken_text")
+                or segment.get("text")
+                or segment.get("screen_text")
+                or ""
+            )
+            lines.append(f"- {time_range} {text}".strip())
+
+    segments = _list_of_objects(output.get("segments"))
+    if segments:
+        lines.extend(["", "#### 片段", ""])
+        for segment in segments[:8]:
+            start = segment.get("start") or ""
+            end = segment.get("end") or ""
+            text = segment.get("text") or ""
+            lines.append(f"- {start} {end} {text}".strip())
+
+
+def _append_storyboard(lines: list[str], output: dict[str, Any]) -> None:
+    storyboard = output.get("storyboard")
+    shots = _list_of_objects(storyboard.get("shots") if isinstance(storyboard, dict) else None)
+    if not shots:
+        return
+    lines.extend(["", "#### 分镜", ""])
+    for shot in shots[:8]:
+        shot_id = shot.get("shot_id") or shot.get("id") or ""
+        description = shot.get("description") or shot.get("visual") or ""
+        duration = shot.get("duration") or ""
+        suffix = f"（{duration}s）" if duration else ""
+        lines.append(f"- {shot_id}：{description}{suffix}")
+
+
+def _append_prompt_pack(lines: list[str], output: dict[str, Any]) -> None:
+    prompt_pack = output.get("render_prompt_pack")
+    prompts = _list_of_objects(
+        prompt_pack.get("prompts") if isinstance(prompt_pack, dict) else None
+    )
+    if not prompts:
+        return
+    lines.extend(["", "#### 渲染提示词", ""])
+    for prompt in prompts[:8]:
+        shot_id = prompt.get("shot_id") or prompt.get("id") or ""
+        prompt_text = prompt.get("prompt") or prompt.get("text") or ""
+        lines.append(f"- {shot_id}：{prompt_text}")
+
+
+def _list_of_objects(value: object) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, dict)]
+
+
+def _status_label(status: str) -> str:
+    labels = {
+        "completed": "已完成",
+        "succeeded": "成功",
+        "failed": "失败",
+        "running": "运行中",
+        "needs_input": "需要补充信息",
+        "requires_confirmation": "需要确认",
+        "waiting_approval": "等待审批",
+    }
+    return labels.get(status, status)
 
 
 def _sse_event(event: str, data: dict[str, Any]) -> str:

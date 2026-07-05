@@ -6,7 +6,7 @@ from bkl_engine.infrastructure.package_loaders.tool_loader import ToolLoadError,
 
 
 def test_loads_python_tool_package_from_directory() -> None:
-    tool = load_tool(Path("examples/tools/subtitle_generate_srt"))
+    tool = load_tool(Path("resources/tools/subtitle_generate_srt"))
 
     assert tool.id == "subtitle_generate_srt"
     assert tool.type == "python"

@@ -145,10 +145,10 @@ class SkillEngine:
         if self.catalog_store is None:
             return
         for entry in self.catalog_store.list_tools():
-            if entry.enabled:
+            if entry.enabled and Path(entry.path).exists():
                 self.tool_registry.register_tool(entry.path)
         for entry in self.catalog_store.list_skills():
-            if entry.enabled:
+            if entry.enabled and Path(entry.path).exists():
                 self.skill_registry.register_skill(entry.path)
 
     async def run_skill(

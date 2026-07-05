@@ -11,12 +11,7 @@
     "script",
     "script_segments",
     "storyboard",
-    "render_prompt_pack",
-    "asset_manifest",
-    "timeline",
-    "render_job",
-    "video_draft",
-    "review_report"
+    "render_prompt_pack"
   ],
   "additionalProperties": true,
   "properties": {
@@ -68,21 +63,6 @@
       "type": "object"
     },
     "render_prompt_pack": {
-      "type": "object"
-    },
-    "asset_manifest": {
-      "type": "object"
-    },
-    "timeline": {
-      "type": "object"
-    },
-    "render_job": {
-      "type": "object"
-    },
-    "video_draft": {
-      "type": "object"
-    },
-    "review_report": {
       "type": "object"
     }
   }

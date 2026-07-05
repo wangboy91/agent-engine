@@ -3,6 +3,7 @@
 import json
 import os
 import re
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 import httpx
@@ -26,21 +27,20 @@ class OpenAICompatibleProvider:
         profile: str,
         messages: list[dict[str, object]],
         tools: list[dict[str, object]],
+        stream_callback: Callable[[str], Awaitable[None]] | None = None,
     ) -> ModelResponse:
         del profile
         if self.config.base_url is None:
             raise BklEngineError("CONFIG_INVALID", "OpenAI-compatible base_url is required")
 
+        if stream_callback is not None and not tools:
+            return await self._chat_streaming(messages, stream_callback)
+
         try:
             response = await self.client.post(
                 f"{self.config.base_url.rstrip('/')}/chat/completions",
                 headers=self._headers(),
-                json={
-                    "model": self.config.model,
-                    "max_tokens": self.config.max_tokens,
-                    "messages": messages,
-                    "tools": self._format_tools(tools),
-                },
+                json=self._request_payload(messages, tools, stream=False),
             )
             response.raise_for_status()
         except httpx.TimeoutException as exc:
@@ -71,6 +71,96 @@ class OpenAICompatibleProvider:
         if not isinstance(payload, dict):
             raise BklEngineError("MODEL_PROVIDER_ERROR", "OpenAI-compatible response is invalid")
         return self._parse_response(payload)
+
+    async def _chat_streaming(
+        self,
+        messages: list[dict[str, object]],
+        stream_callback: Callable[[str], Awaitable[None]],
+    ) -> ModelResponse:
+        if self.config.base_url is None:
+            raise BklEngineError("CONFIG_INVALID", "OpenAI-compatible base_url is required")
+        content_parts: list[str] = []
+        try:
+            async with self.client.stream(
+                "POST",
+                f"{self.config.base_url.rstrip('/')}/chat/completions",
+                headers=self._headers(),
+                json=self._request_payload(messages, [], stream=True),
+            ) as response:
+                response.raise_for_status()
+                async for line in response.aiter_lines():
+                    delta = self._parse_stream_line(line)
+                    if delta is None:
+                        continue
+                    content_parts.append(delta)
+                    await stream_callback(delta)
+        except httpx.TimeoutException as exc:
+            raise BklEngineError(
+                "MODEL_PROVIDER_TIMEOUT",
+                f"OpenAI-compatible model request timed out after {self.config.timeout_seconds}s",
+                {
+                    "provider": "openai-compatible",
+                    "timeout_seconds": self.config.timeout_seconds,
+                    "error_type": exc.__class__.__name__,
+                },
+                retryable=True,
+            ) from exc
+        except httpx.HTTPError as exc:
+            details: dict[str, object] = {
+                "provider": "openai-compatible",
+                "error_type": exc.__class__.__name__,
+            }
+            if isinstance(exc, httpx.HTTPStatusError):
+                details["status_code"] = exc.response.status_code
+            raise BklEngineError(
+                "MODEL_PROVIDER_ERROR",
+                str(exc) or exc.__class__.__name__,
+                details,
+                retryable=True,
+            ) from exc
+        return ModelResponse(final_output=self._parse_content("".join(content_parts)))
+
+    def _request_payload(
+        self,
+        messages: list[dict[str, object]],
+        tools: list[dict[str, object]],
+        stream: bool,
+    ) -> dict[str, object]:
+        payload: dict[str, object] = {
+            "model": self.config.model,
+            "max_tokens": self.config.max_tokens,
+            "messages": messages,
+        }
+        formatted_tools = self._format_tools(tools)
+        if formatted_tools:
+            payload["tools"] = formatted_tools
+        if stream:
+            payload["stream"] = True
+        return payload
+
+    def _parse_stream_line(self, line: str) -> str | None:
+        if not line.startswith("data:"):
+            return None
+        data = line.removeprefix("data:").strip()
+        if not data or data == "[DONE]":
+            return None
+        try:
+            payload = json.loads(data)
+        except json.JSONDecodeError:
+            return None
+        if not isinstance(payload, dict):
+            return None
+        choices = payload.get("choices", [])
+        if not isinstance(choices, list) or not choices:
+            return None
+        first_choice = choices[0]
+        if not isinstance(first_choice, dict):
+            return None
+        delta = first_choice.get("delta", {})
+        if not isinstance(delta, dict):
+            return None
+        content = delta.get("content")
+        return content if isinstance(content, str) else None
 
     def _headers(self) -> dict[str, str]:
         api_key = self._api_key()

@@ -1,5 +1,6 @@
 """Application-layer ports implemented by infrastructure adapters."""
 
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
@@ -46,6 +47,7 @@ class ModelGatewayPort(Protocol):
         profile: str,
         messages: list[dict[str, object]],
         tools: list[dict[str, object]],
+        stream_callback: Callable[[str], Awaitable[None]] | None = None,
     ) -> ModelResponse:
         ...
 

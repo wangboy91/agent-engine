@@ -181,10 +181,10 @@ ANTHROPIC_MODEL=astron-code-latest
 
 ```bash
 uv --cache-dir .uv-cache run --extra dev bkl tool register \
-  examples/tools/subtitle_generate_srt
+  resources/tools/subtitle_generate_srt
 
 uv --cache-dir .uv-cache run --extra dev bkl skill register \
-  examples/skills/talking-video
+  resources/skills/talking-video
 ```
 
 可以通过 `--catalog` 指定其他 catalog 文件，便于测试。当前产品底座不把这个文件当作全局技能市场使用，它只是本地运行时可加载 Tool/Skill 包的缓存。
@@ -233,8 +233,8 @@ bkl gateway \
 
 ```bash
 uv --cache-dir .uv-cache run --extra dev bkl tool test \
-  examples/tools/subtitle_generate_srt \
-  examples/inputs/subtitle_input.json \
+  resources/tools/subtitle_generate_srt \
+  resources/inputs/subtitle_input.json \
   --output json
 ```
 
@@ -243,9 +243,9 @@ uv --cache-dir .uv-cache run --extra dev bkl tool test \
 ```bash
 uv --cache-dir .uv-cache run --extra dev bkl skill run \
   talking-video \
-  examples/inputs/talking-video-input.json \
-  --skills-dir examples/skills \
-  --tools-dir examples/tools \
+  resources/inputs/talking-video-input.json \
+  --skills-dir resources/skills \
+  --tools-dir resources/tools \
   --output json
 ```
 
@@ -256,13 +256,13 @@ uv --cache-dir .uv-cache run --extra dev bkl skill run \
 ```bash
 uv --cache-dir .uv-cache run --extra dev bkl skill run \
   content-video-workflow \
-  examples/inputs/content-video-workflow-input.json \
-  --skills-dir examples/skills \
-  --tools-dir examples/tools \
+  resources/inputs/content-video-workflow-input.json \
+  --skills-dir resources/skills \
+  --tools-dir resources/tools \
   --output json
 ```
 
-该 Workflow Skill 会按顺序运行多个子 Skill，并输出从想法到复盘的结构化资产：
+该 Workflow Skill 会按顺序运行多个子 Skill，并输出从想法到分镜提示词的结构化资产：
 
 ```text
 content-brief-planner
@@ -272,22 +272,18 @@ content-brief-planner
   -> script-segmenter
   -> storyboard-designer
   -> render-prompt-builder
-  -> asset-manifest-builder
-  -> video-timeline-planner
-  -> video-render-dispatcher
-  -> content-review-reporter
 ```
 
-最终结果包含 `ContentBrief`、`HookPlan`、`StyleBible`、`Script`、`ScriptSegments`、`Storyboard`、`RenderPromptPack`、`AssetManifest`、`Timeline`、`RenderJob`、`VideoDraft` 和 `ReviewReport`，并会在 artifact 目录写入 `content-video-workflow.json`。示例渲染步骤默认调用 `mock_video_render`，生成本地 mock 视频文件和 render manifest，后续可以替换成真实视频生成、TTS、FFmpeg 或 Remotion Provider Adapter。
+最终结果包含 `ContentBrief`、`HookPlan`、`StyleBible`、`Script`、`ScriptSegments`、`Storyboard` 和 `RenderPromptPack`，并会在 artifact 目录写入 `content-video-workflow.json`。真实视频生成、TTS、FFmpeg 或 Remotion 合成可以作为后续 Provider Adapter 或独立工作流继续接入。
 
 运行「王不懂的小实验」示例 Skill：
 
 ```bash
 uv --cache-dir .uv-cache run --extra dev bkl skill run \
   wangbudong-experiment \
-  examples/inputs/wangbudong-experiment-input.json \
-  --skills-dir examples/skills \
-  --tools-dir examples/tools \
+  resources/inputs/wangbudong-experiment-input.json \
+  --skills-dir resources/skills \
+  --tools-dir resources/tools \
   --output json
 ```
 
@@ -298,8 +294,8 @@ uv --cache-dir .uv-cache run --extra dev bkl skill run \
 ```bash
 uv --cache-dir .uv-cache run --extra dev bkl chat \
   --once "帮我生成60秒小红书口播视频，主题是程序员护眼台灯" \
-  --skills-dir examples/skills \
-  --tools-dir examples/tools \
+  --skills-dir resources/skills \
+  --tools-dir resources/tools \
   --output json
 ```
 
@@ -311,8 +307,8 @@ Agent 会先从已注册或扫描到的 Skill 中选择候选 `skill_id`，再�
 bkl chat \
   --once "介绍openspec" \
   --skill content-video-workflow \
-  --skills-dir examples/skills \
-  --tools-dir examples/tools \
+  --skills-dir resources/skills \
+  --tools-dir resources/tools \
   --config bkl.yaml \
   --view prompts \
   --output json
@@ -326,8 +322,8 @@ bkl chat \
 bkl chat \
   --once "介绍openspec" \
   --skill content-video-workflow \
-  --skills-dir examples/skills \
-  --tools-dir examples/tools \
+  --skills-dir resources/skills \
+  --tools-dir resources/tools \
   --config bkl.yaml \
   --view trace \
   --output json
@@ -340,9 +336,9 @@ bkl chat \
 ```bash
 uv --cache-dir .uv-cache run --extra dev bkl skill run \
   talking-video \
-  examples/inputs/talking-video-input.json \
-  --skills-dir examples/skills \
-  --tools-dir examples/tools \
+  resources/inputs/talking-video-input.json \
+  --skills-dir resources/skills \
+  --tools-dir resources/tools \
   --config bkl.yaml \
   --output json
 ```
@@ -368,8 +364,8 @@ from bkl_engine.engine import SkillEngine
 
 async def main() -> None:
     engine = SkillEngine.load("bkl.yaml")
-    await engine.register_tool("examples/tools/subtitle_generate_srt")
-    await engine.register_skill("examples/skills/talking-video")
+    await engine.register_tool("resources/tools/subtitle_generate_srt")
+    await engine.register_skill("resources/skills/talking-video")
     result = await engine.run_skill(
         "talking-video",
         {
@@ -397,11 +393,11 @@ uv --cache-dir .uv-cache run --extra dev bkl serve --config bkl.yaml
 ```bash
 curl -X POST http://127.0.0.1:8000/tools/register \
   -H 'Content-Type: application/json' \
-  -d '{"path":"examples/tools/subtitle_generate_srt"}'
+  -d '{"path":"resources/tools/subtitle_generate_srt"}'
 
 curl -X POST http://127.0.0.1:8000/skills/register \
   -H 'Content-Type: application/json' \
-  -d '{"path":"examples/skills/talking-video"}'
+  -d '{"path":"resources/skills/talking-video"}'
 
 curl -X POST http://127.0.0.1:8000/skills/talking-video/runs \
   -H 'Content-Type: application/json' \
@@ -589,10 +585,10 @@ Config files store environment variable names only, not secret values.
 
 ```bash
 uv --cache-dir .uv-cache run --extra dev bkl tool register \
-  examples/tools/subtitle_generate_srt
+  resources/tools/subtitle_generate_srt
 
 uv --cache-dir .uv-cache run --extra dev bkl skill register \
-  examples/skills/talking-video
+  resources/skills/talking-video
 ```
 
 Use `--catalog` to select another catalog file for tests. The product base does
@@ -652,8 +648,8 @@ Execute the example Python Tool:
 
 ```bash
 uv --cache-dir .uv-cache run --extra dev bkl tool test \
-  examples/tools/subtitle_generate_srt \
-  examples/inputs/subtitle_input.json \
+  resources/tools/subtitle_generate_srt \
+  resources/inputs/subtitle_input.json \
   --output json
 ```
 
@@ -662,9 +658,9 @@ Run the example Skill with the mock model:
 ```bash
 uv --cache-dir .uv-cache run --extra dev bkl skill run \
   talking-video \
-  examples/inputs/talking-video-input.json \
-  --skills-dir examples/skills \
-  --tools-dir examples/tools \
+  resources/inputs/talking-video-input.json \
+  --skills-dir resources/skills \
+  --tools-dir resources/tools \
   --output json
 ```
 
@@ -675,9 +671,9 @@ Run the Wangbudong experiment example Skill:
 ```bash
 uv --cache-dir .uv-cache run --extra dev bkl skill run \
   wangbudong-experiment \
-  examples/inputs/wangbudong-experiment-input.json \
-  --skills-dir examples/skills \
-  --tools-dir examples/tools \
+  resources/inputs/wangbudong-experiment-input.json \
+  --skills-dir resources/skills \
+  --tools-dir resources/tools \
   --output json
 ```
 
@@ -688,8 +684,8 @@ Run a Skill through the Agent layer from natural language:
 ```bash
 uv --cache-dir .uv-cache run --extra dev bkl chat \
   --once "帮我生成60秒小红书口播视频，主题是程序员护眼台灯" \
-  --skills-dir examples/skills \
-  --tools-dir examples/tools \
+  --skills-dir resources/skills \
+  --tools-dir resources/tools \
   --output json
 ```
 
@@ -701,8 +697,8 @@ Run the full content-video workflow from one topic and print only storyboard/ren
 bkl chat \
   --once "介绍openspec" \
   --skill content-video-workflow \
-  --skills-dir examples/skills \
-  --tools-dir examples/tools \
+  --skills-dir resources/skills \
+  --tools-dir resources/tools \
   --config bkl.yaml \
   --view prompts \
   --output json
@@ -715,9 +711,9 @@ Run the example Skill with the real model profile from `bkl.yaml + .env`:
 ```bash
 uv --cache-dir .uv-cache run --extra dev bkl skill run \
   talking-video \
-  examples/inputs/talking-video-input.json \
-  --skills-dir examples/skills \
-  --tools-dir examples/tools \
+  resources/inputs/talking-video-input.json \
+  --skills-dir resources/skills \
+  --tools-dir resources/tools \
   --config bkl.yaml \
   --output json
 ```
@@ -743,8 +739,8 @@ from bkl_engine.engine import SkillEngine
 
 async def main() -> None:
     engine = SkillEngine.load("bkl.yaml")
-    await engine.register_tool("examples/tools/subtitle_generate_srt")
-    await engine.register_skill("examples/skills/talking-video")
+    await engine.register_tool("resources/tools/subtitle_generate_srt")
+    await engine.register_skill("resources/skills/talking-video")
     result = await engine.run_skill(
         "talking-video",
         {
@@ -772,11 +768,11 @@ Register a Tool and Skill, then run:
 ```bash
 curl -X POST http://127.0.0.1:8000/tools/register \
   -H 'Content-Type: application/json' \
-  -d '{"path":"examples/tools/subtitle_generate_srt"}'
+  -d '{"path":"resources/tools/subtitle_generate_srt"}'
 
 curl -X POST http://127.0.0.1:8000/skills/register \
   -H 'Content-Type: application/json' \
-  -d '{"path":"examples/skills/talking-video"}'
+  -d '{"path":"resources/skills/talking-video"}'
 
 curl -X POST http://127.0.0.1:8000/skills/talking-video/runs \
   -H 'Content-Type: application/json' \

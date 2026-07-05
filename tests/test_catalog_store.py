@@ -10,20 +10,57 @@ def test_engine_persists_and_loads_catalog_entries(tmp_path: Path) -> None:
     catalog_path = tmp_path / ".bkl" / "catalog.json"
 
     engine = SkillEngine.load(config_path, catalog_path=catalog_path)
-    tool = _run(engine.register_tool("examples/tools/subtitle_generate_srt"))
-    skill = _run(engine.register_skill("examples/skills/talking-video"))
+    tool = _run(engine.register_tool("resources/tools/subtitle_generate_srt"))
+    skill = _run(engine.register_skill("resources/skills/talking-video"))
 
     catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
     assert catalog["version"] == 1
     assert catalog["tools"]["subtitle_generate_srt"]["id"] == tool.id
     assert (
         catalog["tools"]["subtitle_generate_srt"]["path"]
-        == "examples/tools/subtitle_generate_srt"
+        == "resources/tools/subtitle_generate_srt"
     )
     assert catalog["tools"]["subtitle_generate_srt"]["enabled"] is True
     assert catalog["skills"]["talking-video"]["id"] == skill.id
-    assert catalog["skills"]["talking-video"]["path"] == "examples/skills/talking-video"
+    assert catalog["skills"]["talking-video"]["path"] == "resources/skills/talking-video"
     assert catalog["skills"]["talking-video"]["enabled"] is True
+
+    reloaded = SkillEngine.load(config_path, catalog_path=catalog_path)
+
+    assert [registered_tool.id for registered_tool in reloaded.tool_registry.list_tools()] == [
+        "subtitle_generate_srt"
+    ]
+    assert [registered_skill.id for registered_skill in reloaded.skill_registry.list_skills()] == [
+        "talking-video"
+    ]
+
+
+def test_engine_load_migrates_legacy_examples_catalog_paths(tmp_path: Path) -> None:
+    config_path = _write_mock_config(tmp_path)
+    catalog_path = tmp_path / ".bkl" / "catalog.json"
+    catalog_path.parent.mkdir(parents=True)
+    catalog_path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "tools": {
+                    "subtitle_generate_srt": {
+                        "id": "subtitle_generate_srt",
+                        "path": "examples/tools/subtitle_generate_srt",
+                        "enabled": True,
+                    }
+                },
+                "skills": {
+                    "talking-video": {
+                        "id": "talking-video",
+                        "path": "examples/skills/talking-video",
+                        "enabled": True,
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
 
     reloaded = SkillEngine.load(config_path, catalog_path=catalog_path)
 
@@ -39,7 +76,7 @@ def test_engine_can_disable_catalog_loading(tmp_path: Path) -> None:
     config_path = _write_mock_config(tmp_path)
 
     engine = SkillEngine.load(config_path, catalog_path=None)
-    _run(engine.register_tool("examples/tools/subtitle_generate_srt"))
+    _run(engine.register_tool("resources/tools/subtitle_generate_srt"))
 
     assert not (tmp_path / ".bkl" / "catalog.json").exists()
 
@@ -49,8 +86,8 @@ def test_engine_load_persists_workspace_and_session_state(tmp_path: Path) -> Non
     catalog_path = tmp_path / ".bkl" / "catalog.json"
 
     engine = SkillEngine.load(config_path, catalog_path=catalog_path)
-    _run(engine.register_tool("examples/tools/subtitle_generate_srt"))
-    _run(engine.register_skill("examples/skills/talking-video"))
+    _run(engine.register_tool("resources/tools/subtitle_generate_srt"))
+    _run(engine.register_skill("resources/skills/talking-video"))
     engine.workspace_store.create_workspace("workspace_content_ops", "Content Ops")
     engine.workspace_store.create_identity(
         "workspace_content_ops",

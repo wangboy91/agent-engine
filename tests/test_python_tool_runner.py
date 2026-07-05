@@ -12,7 +12,7 @@ from bkl_engine.infrastructure.tool_runners.python_tool import (
 
 
 def test_python_tool_runner_executes_tool_with_json_stdio(tmp_path: Path) -> None:
-    tool = load_tool("examples/tools/subtitle_generate_srt")
+    tool = load_tool("resources/tools/subtitle_generate_srt")
     result = asyncio.run(
         PythonToolRunner().execute(
             tool,
@@ -31,7 +31,7 @@ def test_python_tool_runner_executes_tool_with_json_stdio(tmp_path: Path) -> Non
 
 
 def test_wangbudong_prompt_pack_tool_writes_markdown_files(tmp_path: Path) -> None:
-    tool = load_tool("examples/tools/wangbudong_write_prompt_pack")
+    tool = load_tool("resources/tools/wangbudong_write_prompt_pack")
     result = asyncio.run(
         PythonToolRunner().execute(
             tool,
@@ -65,7 +65,7 @@ def test_python_tool_runner_resolves_relative_artifact_dir_from_caller_cwd(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    tool = load_tool(Path.cwd() / "examples/tools/wangbudong_write_prompt_pack")
+    tool = load_tool(Path.cwd() / "resources/tools/wangbudong_write_prompt_pack")
     monkeypatch.chdir(tmp_path)
 
     result = asyncio.run(
@@ -90,7 +90,7 @@ def test_python_tool_runner_resolves_relative_artifact_dir_from_caller_cwd(
 
 
 def test_python_tool_runner_rejects_invalid_input_schema(tmp_path: Path) -> None:
-    tool = load_tool("examples/tools/subtitle_generate_srt")
+    tool = load_tool("resources/tools/subtitle_generate_srt")
 
     with pytest.raises(ToolExecutionError, match="TOOL_INPUT_SCHEMA_INVALID"):
         asyncio.run(

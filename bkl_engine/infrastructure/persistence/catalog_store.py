@@ -35,7 +35,7 @@ class JsonCatalogStore:
             return CatalogDocument()
         try:
             raw = json.loads(self.path.read_text(encoding="utf-8"))
-            return CatalogDocument.model_validate(raw)
+            return _migrate_legacy_resource_paths(CatalogDocument.model_validate(raw))
         except json.JSONDecodeError as exc:
             raise BklEngineError("CATALOG_INVALID", f"Invalid catalog JSON: {self.path}") from exc
         except ValidationError as exc:
@@ -77,3 +77,28 @@ def _package_path(path: Path | None, kind: str, package_id: str) -> str:
     if path is None:
         raise BklEngineError("CATALOG_INVALID", f"{kind} package path missing: {package_id}")
     return path.as_posix()
+
+
+def _migrate_legacy_resource_paths(catalog: CatalogDocument) -> CatalogDocument:
+    return catalog.model_copy(
+        update={
+            "tools": {
+                key: _migrate_legacy_entry_path(entry)
+                for key, entry in catalog.tools.items()
+            },
+            "skills": {
+                key: _migrate_legacy_entry_path(entry)
+                for key, entry in catalog.skills.items()
+            },
+        }
+    )
+
+
+def _migrate_legacy_entry_path(entry: CatalogEntry) -> CatalogEntry:
+    if not entry.path.startswith("examples/"):
+        return entry
+    legacy_path = Path(entry.path)
+    candidate_path = Path("resources") / Path(entry.path).relative_to("examples")
+    if legacy_path.exists() or not candidate_path.exists():
+        return entry
+    return entry.model_copy(update={"path": candidate_path.as_posix()})
