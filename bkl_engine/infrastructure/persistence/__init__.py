@@ -6,6 +6,7 @@ from bkl_engine.infrastructure.persistence.catalog_store import (
     CatalogEntry,
     JsonCatalogStore,
 )
+from bkl_engine.infrastructure.persistence.memory_store import LocalMarkdownMemoryStore
 from bkl_engine.infrastructure.persistence.policy_store import InMemoryPolicyStore, JsonPolicyStore
 from bkl_engine.infrastructure.persistence.run_store import InMemoryRunStore, JsonRunStore
 from bkl_engine.infrastructure.persistence.secret_store import InMemorySecretStore, JsonSecretStore
@@ -33,4 +34,5 @@ __all__ = [
     "JsonSecretStore",
     "JsonWorkspaceStore",
     "LocalArtifactStore",
+    "LocalMarkdownMemoryStore",
 ]

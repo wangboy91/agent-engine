@@ -11,6 +11,10 @@ from uuid import uuid4
 from jsonschema import ValidationError as JsonSchemaValidationError
 from jsonschema import validate
 
+from bkl_engine.application.execution.prompt_context import (
+    PromptContextAssembler,
+    PromptContextAssembly,
+)
 from bkl_engine.application.ports import (
     ArtifactStorePort,
     ModelGatewayPort,
@@ -46,6 +50,7 @@ class SkillRuntime:
         trace_store: TraceStorePort,
         artifact_store: ArtifactStorePort,
         run_store: RunStorePort,
+        prompt_context_assembler: PromptContextAssembler | None = None,
     ) -> None:
         self.skill_registry = skill_registry
         self.tool_registry = tool_registry
@@ -54,6 +59,7 @@ class SkillRuntime:
         self.trace_store = trace_store
         self.artifact_store = artifact_store
         self.run_store = run_store
+        self.prompt_context_assembler = prompt_context_assembler
 
     async def run_skill(
         self,
@@ -564,7 +570,9 @@ class SkillRuntime:
         allowed_tools: list[Tool],
         context: RunContext | None,
     ) -> RunResult:
-        messages = self._build_messages(skill, input_data)
+        prompt_context = self._build_messages(skill, input_data, context)
+        messages = prompt_context.messages
+        self._record_prompt_context(run_id, prompt_context)
         tool_call_count = 0
         usage = UsageSummary()
 
@@ -1083,11 +1091,46 @@ class SkillRuntime:
         self,
         skill: Skill,
         input_data: dict[str, object],
-    ) -> list[dict[str, object]]:
-        return [
-            {"role": "system", "content": skill.prompt},
-            {"role": "user", "content": json.dumps({"input": input_data}, ensure_ascii=False)},
-        ]
+        context: RunContext | None,
+    ) -> PromptContextAssembly:
+        if self.prompt_context_assembler is not None:
+            return self.prompt_context_assembler.build_messages(skill, input_data, context)
+        return PromptContextAssembly(
+            messages=[
+                {"role": "system", "content": skill.prompt},
+                {
+                    "role": "user",
+                    "content": json.dumps({"input": input_data}, ensure_ascii=False),
+                },
+            ]
+        )
+
+    def _record_prompt_context(
+        self,
+        run_id: str,
+        prompt_context: PromptContextAssembly,
+    ) -> None:
+        snapshot = prompt_context.memory_snapshot
+        if snapshot is None or not snapshot.has_content:
+            return
+        self.trace_store.record(
+            run_id,
+            "memory_loaded",
+            "Memory snapshot loaded",
+            {
+                "workspace_id": snapshot.workspace_id,
+                "identity_id": snapshot.identity_id,
+                "source_count": len(snapshot.sources),
+                "sources": [
+                    {
+                        "target": source.target,
+                        "path": str(source.path),
+                        "char_count": source.char_count,
+                    }
+                    for source in snapshot.sources
+                ],
+            },
+        )
 
     def _tools_to_llm_schema(self, tools: list[Tool]) -> list[dict[str, object]]:
         return [

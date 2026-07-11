@@ -3,8 +3,14 @@
 from pathlib import Path
 
 from bkl_engine.application.execution import SkillRuntime
+from bkl_engine.application.execution.prompt_context import PromptContextAssembler
 from bkl_engine.application.policy import PolicyEngine
-from bkl_engine.application.ports import AgentSessionStorePort, ToolExecutorPort, WorkspaceStorePort
+from bkl_engine.application.ports import (
+    AgentSessionStorePort,
+    MemoryStorePort,
+    ToolExecutorPort,
+    WorkspaceStorePort,
+)
 from bkl_engine.application.tool.executor import ToolExecutor
 from bkl_engine.domain.execution import RunContext, RunResult
 from bkl_engine.domain.skill import Skill
@@ -28,6 +34,7 @@ from bkl_engine.infrastructure.persistence import (
     JsonSecretStore,
     JsonWorkspaceStore,
     LocalArtifactStore,
+    LocalMarkdownMemoryStore,
 )
 from bkl_engine.infrastructure.repositories import InMemorySkillRegistry, InMemoryToolRegistry
 from bkl_engine.infrastructure.tool_runners import ApiToolRunner, PythonToolRunner
@@ -45,6 +52,7 @@ class SkillEngine:
         artifact_store: LocalArtifactStore,
         run_store: InMemoryRunStore,
         session_store: AgentSessionStorePort | None = None,
+        memory_store: MemoryStorePort | None = None,
         workspace_store: WorkspaceStorePort | None = None,
         policy_store: InMemoryPolicyStore | JsonPolicyStore | None = None,
         secret_store: InMemorySecretStore | JsonSecretStore | None = None,
@@ -58,6 +66,7 @@ class SkillEngine:
         self.artifact_store = artifact_store
         self.run_store = run_store
         self.session_store: AgentSessionStorePort = session_store or InMemoryAgentSessionStore()
+        self.memory_store = memory_store
         self.workspace_store: WorkspaceStorePort = workspace_store or InMemoryWorkspaceStore()
         self.policy_store = policy_store or InMemoryPolicyStore()
         self.secret_store = secret_store or InMemorySecretStore()
@@ -70,6 +79,9 @@ class SkillEngine:
             trace_store=trace_store,
             artifact_store=artifact_store,
             run_store=run_store,
+            prompt_context_assembler=(
+                PromptContextAssembler(memory_store) if memory_store is not None else None
+            ),
         )
 
     @classmethod
@@ -98,6 +110,7 @@ class SkillEngine:
             artifact_store=LocalArtifactStore("data/artifacts"),
             run_store=JsonRunStore(run_path or state_dir / "runs.json"),
             session_store=JsonAgentSessionStore(session_path or state_dir / "sessions.json"),
+            memory_store=LocalMarkdownMemoryStore(state_dir / "memory"),
             workspace_store=JsonWorkspaceStore(workspace_path or state_dir / "workspaces.json"),
             policy_store=policy_store,
             secret_store=secret_store,
@@ -112,18 +125,23 @@ class SkillEngine:
         artifact_root: str | Path = "data/artifacts",
         model_provider: ModelProvider | None = None,
         tool_executor: ToolExecutorPort | None = None,
+        memory_root: str | Path | None = None,
     ) -> "SkillEngine":
         policy_store = InMemoryPolicyStore()
         secret_store = InMemorySecretStore()
+        resolved_artifact_root = Path(artifact_root)
         return cls(
             skill_registry=InMemorySkillRegistry(),
             tool_registry=InMemoryToolRegistry(),
             model_router=ModelRouter(model_provider or MockModelProvider()),
             tool_executor=tool_executor or _default_tool_executor(policy_store, secret_store),
             trace_store=InMemoryTraceStore(),
-            artifact_store=LocalArtifactStore(artifact_root),
+            artifact_store=LocalArtifactStore(resolved_artifact_root),
             run_store=InMemoryRunStore(),
             session_store=InMemoryAgentSessionStore(),
+            memory_store=LocalMarkdownMemoryStore(
+                memory_root or resolved_artifact_root / ".bkl" / "memory"
+            ),
             workspace_store=InMemoryWorkspaceStore(),
             policy_store=policy_store,
             secret_store=secret_store,

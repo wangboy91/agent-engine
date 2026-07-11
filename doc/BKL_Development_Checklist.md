@@ -8,6 +8,8 @@ Target business-agent architecture: [BKL Business Agent Base Architecture](BKL_B
 
 Architecture hardening roadmap: [BKL Business Agent Base Roadmap](BKL_Business_Agent_Base_Roadmap.md).
 
+Memory, knowledge, and cache design: [BKL Memory, Knowledge, and Cache Design](BKL_Memory_Knowledge_Cache_Design.md).
+
 ## 1. P0 Completed Baseline
 
 - [x] Python package skeleton with `pyproject.toml`
@@ -186,7 +188,40 @@ Acceptance:
 - [ ] users can disable or remove built-in packs
 - [ ] built-in packs are documented as examples, not engine internals
 
-## 8. Quality Gates
+## 8. Memory, Knowledge, and Cache Iteration
+
+Goal: add Hermes-style bounded memory, session search, Markdown knowledge indexing, and prompt-cache-friendly context injection.
+
+Design reference: [BKL Memory, Knowledge, and Cache Design](BKL_Memory_Knowledge_Cache_Design.md).
+
+- [x] add `.bkl/memory/{workspace_id}/{identity_id}/MEMORY.md`
+- [x] add `.bkl/memory/{workspace_id}/{identity_id}/USER.md`
+- [x] add MemoryStorePort and local Markdown-backed implementation
+- [x] load memory as a frozen Skill run prompt snapshot
+- [ ] promote frozen memory snapshot to Agent session scope
+- [x] inject memory snapshot into Skill prompt
+- [ ] add memory size limits and security scanning
+- [ ] add SQLite state database for sessions/messages
+- [ ] add FTS5 session search
+- [ ] support `resources/skills/<skill_id>/knowledge/*.md`
+- [ ] add Markdown chunker with heading path metadata
+- [ ] add SQLite FTS5 knowledge index
+- [ ] scan knowledge incrementally using file hashes
+- [ ] retrieve knowledge by workspace_id + identity_id + skill_id + query
+- [ ] inject top-k knowledge chunks into Skill prompt
+- [x] trace `memory_loaded` source metadata for injected memory
+- [ ] trace context/knowledge/session retrieval events
+- [ ] show retrieved sources in runtime UI
+
+Acceptance:
+
+- [ ] memory is injected without changing during an active session
+- [ ] session history can be searched without sending all history to the model
+- [ ] Skill knowledge Markdown is indexed once and reused
+- [ ] a Skill run injects only relevant top-k knowledge chunks
+- [ ] UI shows which memory/context/knowledge sources were used
+
+## 9. Quality Gates
 
 Every implementation iteration must pass:
 

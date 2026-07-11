@@ -98,6 +98,8 @@ Agent-Orchestrated Execution
 
 详细设计见 [BKL Agent Runtime Engineering Plan](BKL_Agent_Runtime_Engineering.md)。
 
+记忆、知识库、历史会话搜索和 Prompt Cache 设计见 [BKL Memory, Knowledge, and Cache Design](BKL_Memory_Knowledge_Cache_Design.md)。这些能力属于 Agent/Runtime 的上下文增强层，不应该让每个 Skill 强制依赖 RAG；第一版应按需检索 Markdown 知识片段并注入 prompt。
+
 ---
 
 ## 4. 系统边界

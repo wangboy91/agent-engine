@@ -707,6 +707,78 @@ def test_skill_runtime_appends_assistant_tool_call_message(tmp_path: Path) -> No
     assert second_call_messages[-1]["role"] == "tool"
 
 
+def test_skill_runtime_injects_memory_snapshot_into_system_prompt(tmp_path: Path) -> None:
+    provider = RecordingFinalOutputProvider(
+        {
+            "content_brief": {
+                "topic": "介绍openspec",
+                "platform": "xiaohongshu",
+                "content_type": "talking_head",
+                "duration_seconds": 60,
+                "audience": "AI 工程师",
+                "content_goal": "让用户理解 OpenSpec 的价值",
+                "core_angle": "用规范驱动 AI 工程协作",
+                "user_pain_points": ["需求容易漂移", "实现和设计脱节"],
+                "recommended_structure": ["Hook", "Value", "CTA"],
+                "delivery_format": "vertical_talking_video",
+            }
+        }
+    )
+    engine = SkillEngine.create_for_testing(
+        artifact_root=tmp_path,
+        model_provider=provider,
+        memory_root=tmp_path / ".bkl" / "memory",
+    )
+    engine.memory_store.append_entry(
+        "workspace_content_ops",
+        "identity_xhs_operator",
+        "memory",
+        "默认使用 resources/skills 作为技能目录",
+    )
+    engine.memory_store.append_entry(
+        "workspace_content_ops",
+        "identity_xhs_operator",
+        "user",
+        "用户喜欢中文、直接、少废话的回答",
+    )
+    asyncio.run(engine.register_skill("resources/skills/content-brief-planner"))
+
+    result = asyncio.run(
+        engine.run_skill(
+            "content-brief-planner",
+            {
+                "topic": "介绍openspec",
+                "platform": "xiaohongshu",
+                "duration_seconds": 60,
+            },
+            context=RunContext(
+                workspace_id="workspace_content_ops",
+                identity_id="identity_xhs_operator",
+            ),
+        )
+    )
+
+    assert result.status == "succeeded"
+    system_prompt = str(provider.calls[0][0]["content"])
+    assert "# Workspace Memory" in system_prompt
+    assert "默认使用 resources/skills 作为技能目录" in system_prompt
+    assert "# User Profile" in system_prompt
+    assert "用户喜欢中文、直接、少废话的回答" in system_prompt
+
+    memory_events = [
+        event for event in engine.trace_store.list_events(result.run_id)
+        if event.type == "memory_loaded"
+    ]
+    assert len(memory_events) == 1
+    assert memory_events[0].data["workspace_id"] == "workspace_content_ops"
+    assert memory_events[0].data["identity_id"] == "identity_xhs_operator"
+    assert memory_events[0].data["source_count"] == 2
+    assert "默认使用 resources/skills" not in json.dumps(
+        memory_events[0].data,
+        ensure_ascii=False,
+    )
+
+
 class RecordingToolCallProvider:
     def __init__(self) -> None:
         self.calls: list[list[dict[str, object]]] = []
@@ -737,6 +809,22 @@ class RecordingToolCallProvider:
                 "segments": [],
             }
         )
+
+
+class RecordingFinalOutputProvider:
+    def __init__(self, final_output: dict[str, object]) -> None:
+        self.final_output = final_output
+        self.calls: list[list[dict[str, object]]] = []
+
+    async def chat(
+        self,
+        profile: str,
+        messages: list[dict[str, object]],
+        tools: list[dict[str, object]],
+    ) -> ModelResponse:
+        del profile, tools
+        self.calls.append([dict(message) for message in messages])
+        return ModelResponse(final_output=self.final_output)
 
 
 class FailingModelProvider:

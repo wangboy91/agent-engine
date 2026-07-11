@@ -6,6 +6,7 @@ from typing import Protocol, runtime_checkable
 
 from bkl_engine.domain.agent import AgentMessage, AgentSession, AgentTurn
 from bkl_engine.domain.execution import Artifact, ArtifactType, RunContext, RunResult, TraceEvent
+from bkl_engine.domain.memory import MemorySnapshot, MemoryTarget
 from bkl_engine.domain.model import ModelResponse
 from bkl_engine.domain.policy import PolicyDecision
 from bkl_engine.domain.skill import Skill
@@ -150,6 +151,25 @@ class AgentSessionStorePort(Protocol):
         ...
 
     def append_turn(self, session_id: str, turn: AgentTurn) -> AgentSession:
+        ...
+
+
+@runtime_checkable
+class MemoryStorePort(Protocol):
+    def load_snapshot(
+        self,
+        workspace_id: str | None = None,
+        identity_id: str | None = None,
+    ) -> MemorySnapshot:
+        ...
+
+    def append_entry(
+        self,
+        workspace_id: str | None,
+        identity_id: str | None,
+        target: MemoryTarget,
+        content: str,
+    ) -> MemorySnapshot:
         ...
 
 

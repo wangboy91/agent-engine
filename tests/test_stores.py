@@ -3,6 +3,7 @@ from pathlib import Path
 from bkl_engine.domain.agent import AgentMessage, AgentTurn
 from bkl_engine.domain.execution import RunResult
 from bkl_engine.infrastructure.persistence.artifact_store import LocalArtifactStore
+from bkl_engine.infrastructure.persistence.memory_store import LocalMarkdownMemoryStore
 from bkl_engine.infrastructure.persistence.policy_store import JsonPolicyStore
 from bkl_engine.infrastructure.persistence.run_store import JsonRunStore
 from bkl_engine.infrastructure.persistence.secret_store import JsonSecretStore
@@ -248,6 +249,37 @@ def test_json_session_store_persists_messages_and_turns(tmp_path: Path) -> None:
     assert session.user_id == "user_001"
     assert session.messages[0].content == "介绍openspec"
     assert session.turns[0].turn_id == "turn_001"
+
+
+def test_local_markdown_memory_store_appends_and_reads_snapshot(tmp_path: Path) -> None:
+    root = tmp_path / ".bkl" / "memory"
+    store = LocalMarkdownMemoryStore(root)
+
+    store.append_entry(
+        "workspace_content_ops",
+        "identity_xhs_operator",
+        "memory",
+        "默认使用 resources/skills 作为技能目录",
+    )
+    store.append_entry(
+        "workspace_content_ops",
+        "identity_xhs_operator",
+        "user",
+        "用户喜欢中文、直接、少废话的回答",
+    )
+
+    reloaded = LocalMarkdownMemoryStore(root)
+    snapshot = reloaded.load_snapshot("workspace_content_ops", "identity_xhs_operator")
+
+    assert snapshot.workspace_id == "workspace_content_ops"
+    assert snapshot.identity_id == "identity_xhs_operator"
+    assert "默认使用 resources/skills" in snapshot.memory
+    assert "用户喜欢中文" in snapshot.user
+    assert snapshot.sources[0].target == "memory"
+    assert snapshot.sources[0].path == (
+        root / "workspace_content_ops" / "identity_xhs_operator" / "MEMORY.md"
+    )
+    assert snapshot.sources[1].target == "user"
 
 
 def _run(coroutine):  # type: ignore[no-untyped-def]
