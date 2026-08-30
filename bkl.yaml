@@ -1,9 +1,9 @@
 models:
-  # Change this to xfyun_anthropic to use the Anthropic-compatible endpoint.
-  active_profile: xfyun_openai
+  # Change this to mimo_anthropic to use the Anthropic-compatible endpoint.
+  active_profile: mimo
 
   profiles:
-    xfyun_openai:
+    mimo:
       protocol: openai-compatible
       base_url: ${OPENAI_COMPATIBLE_BASE_URL}
       api_key_env: OPENAI_AUTH_TOKEN
@@ -11,7 +11,7 @@ models:
       timeout_seconds: 180
       max_tokens: 16000
 
-    xfyun_anthropic:
+    mimo_anthropic:
       protocol: anthropic
       base_url: ${ANTHROPIC_BASE_URL}
       api_key_env: ANTHROPIC_AUTH_TOKEN

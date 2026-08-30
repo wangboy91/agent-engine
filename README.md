@@ -1,117 +1,91 @@
 # BKL Skill Engine
 
-Language: [中文](#中文) | [English](#english)
+> 面向 BKL AI 产品的 Python Skill 运行时基座。它把 **Skill 包、Tool 包、模型调用、工作流、Agent 路由、运行记录和 HTTP/CLI 接口** 收敛到一套可复用的运行内核中。
 
----
+当前版本：`0.1.0`（工程验证版）。适合本地开发、原型验证和受控环境的单实例服务；距离多租户生产上线仍需完成本文“生产化门槛”中的工作。
 
-## 中文
+## 目录
 
-BKL Skill Engine 是一个可复用的 Python Skill 运行时，用于加载标准 `SKILL.md`、执行 Tools，并返回结构化结果、Artifacts 和 Trace。
+- [项目定位](#项目定位)
+- [当前完成度](#当前完成度)
+- [核心概念](#核心概念)
+- [架构总览](#架构总览)
+- [快速开始](#快速开始)
+- [配置真实模型](#配置真实模型)
+- [Skill 与 Tool 包规范](#skill-与-tool-包规范)
+- [使用方式：SDK、CLI、HTTP](#使用方式sdkclihttp)
+- [运行数据与安全边界](#运行数据与安全边界)
+- [内置示例资源](#内置示例资源)
+- [开发、测试与排障](#开发测试与排障)
+- [生产化与迭代路线](#生产化与迭代路线)
+- [文档索引](#文档索引)
 
-### 当前能力
+## 项目定位
 
-- 加载本地 Tool 包：`tool.yaml`
-- 通过 JSON stdin/stdout 执行 Python Tool
-- 加载标准 Skill 包：`SKILL.md` frontmatter + Markdown instructions + `bkl.skill.json`
-- 支持同步 Skill Runtime 和 tool-calling loop
-- 支持 Mock、OpenAI-compatible、Anthropic-compatible 模型协议
-- 支持 `bkl.yaml + .env` 多模型 profile 配置，并通过 `models.active_profile` 启用其中一个
-- 记录 in-memory Run 和 Trace
-- 保存本地 Artifact
-- SDK、CLI、FastAPI 共用同一个 `SkillEngine` facade
-- 支持从简单 OpenAPI operation 导入 API Tool
-- 支持第一版 Agent 编排：自然语言路由 Skill、场景映射、输入补齐、`bkl chat --once` 和 `/chat/messages`
+BKL 的目标不是另一个聊天 UI，而是业务智能体的执行基座：把可版本化的业务能力打包成 Skill，把外部能力封装成 Tool，并对每一次执行提供输入/输出校验、可观察性、产物管理与权限控制。
 
-### 安装形态
+它适用于内容生产、营销运营、内部流程助手、垂类工作流等场景。上层产品可以通过 SDK、CLI 或 FastAPI 使用同一个 `SkillEngine`；不需要为每种入口重复实现模型、工具、运行记录等基础能力。
 
-BKL 只维护一个 Core Engine，按使用场景提供不同入口：
+## 当前完成度
 
-- **CLI / SDK**：适合开发者、本地脚本、CI 和服务器批处理
-- **Server / HTTP**：通过 `bkl serve` 部署 FastAPI 服务，供其他系统调用
-- **Desktop / Local GUI**：后续本地界面启动本机 `bkl serve`，通过 HTTP API 管理模型、Tool、Skill 和运行记录
+截至本仓库当前提交，完整测试执行结果为 **127 passed，1 个第三方弃用警告**。下表描述的是代码已实现程度，不等同于生产 SLA。
 
-Skill、Tool、模型配置在所有形态下保持同一套规范。
+| 领域 | 状态 | 已实现内容 |
+| --- | --- | --- |
+| Skill/Tool 包加载 | 可用 | YAML/JSON Schema 校验、注册表、目录扫描、catalog 持久化 |
+| Skill 运行时 | 可用 | 输入输出校验、模型 tool-calling 循环、直接 Tool、串行/DAG 工作流、失败与审批恢复 |
+| Tool 执行 | 可用 | Python 子进程 Tool、HTTP API Tool、OpenAPI operation 导入、超时、Schema 校验 |
+| 模型网关 | 可用 | Mock、OpenAI-compatible、Anthropic-compatible；统一请求/响应模型 |
+| Agent | 基础可用 | 显式 Skill、场景映射、关键词路由、必填输入补齐、低置信度确认、会话记录 |
+| 工作区治理 | 基础可用 | workspace、identity、Skill 绑定、Tool allow/ask/deny、审批、Secret 引用 |
+| 接入层 | 可用 | Typer CLI、FastAPI、SSE、WebSocket、轻量运行控制台 |
+| 可观测性 | 基础可用 | Run、Trace、Artifact、流式 trace 事件、敏感键脱敏 |
+| 生产级平台能力 | 未完成 | 认证鉴权、关系型数据库、分布式任务、限流、指标告警、密钥托管、沙箱隔离 |
 
-### 快速安装与升级
+`resources/` 中的内容视频和亲子实验包是演示/验证资源。多数 Skill 的默认模型 profile 为 `mock`，因此它们验证编排和契约，不代表已经接入真实内容生产服务。
 
-在仓库根目录执行一条命令即可安装 CLI；重复执行同一条命令会覆盖旧版本并完成升级：
+## 核心概念
 
-```bash
-uv tool install --force --upgrade .
+| 概念 | 职责 |
+| --- | --- |
+| **Skill** | 一项可复用业务能力；由说明、运行配置、输入/输出 Schema 和示例组成。 |
+| **Tool** | Skill 可调用的外部能力；当前支持 Python 子进程和 HTTP API。 |
+| **Run** | 一次 Skill 或 Workflow 的完整执行实例，含状态、输入、输出、错误和用量摘要。 |
+| **Trace** | Run 过程中的事件流，例如模型调用、Tool 调用、工作流步骤和失败。 |
+| **Artifact** | Run 产生的文件，例如 JSON 输出、SRT、视频渲染清单。 |
+| **Workspace / Identity** | 资源和权限边界；Skill 安装在 workspace，再绑定给 identity。 |
+| **Policy / Approval** | Tool 调用的 allow、ask、deny 决策；`ask` 会将 Run 挂起，审批后可恢复。 |
+
+## 架构总览
+
+```mermaid
+flowchart TB
+  SDK[SDK] --> Engine[SkillEngine facade]
+  CLI[Typer CLI] --> Engine
+  HTTP[FastAPI / SSE / WebSocket] --> Engine
+  Agent[AgentLoop] --> Engine
+
+  Engine --> Runtime[SkillRuntime]
+  Runtime --> Registry[Skill / Tool Registry]
+  Runtime --> Model[ModelRouter]
+  Runtime --> Executor[ToolExecutor]
+  Executor --> Python[PythonToolRunner]
+  Executor --> API[ApiToolRunner]
+  Executor --> Policy[PolicyEngine]
+
+  Runtime --> Stores[Run / Trace / Artifact / Memory stores]
+  Engine --> Workspace[Workspace / Session / Secret stores]
 ```
 
-安装后验证：
+代码按领域、应用、基础设施和接口分层。`bkl_engine/engine.py` 中的 `SkillEngine` 是唯一公共门面；CLI、HTTP 和 SDK 不应绕过它直接拼装运行时依赖。更完整的模块职责、调用序列与演进边界请阅读 [架构总览与演进](doc/架构总览与演进.md)。
 
-```bash
-bkl --version
-```
+## 快速开始
 
-如果 shell 找不到 `bkl`，先执行：
+### 环境要求
 
-```bash
-uv tool update-shell
-```
-
-再重新打开终端。示例 Tool、Skill 和输入文件在当前仓库里，下面的示例命令默认都从仓库根目录执行。
-
-完整使用说明见 [BKL Usage Guide](doc/BKL_Usage_Guide.md)。
-
-业务智能体基座目标架构见 [BKL Business Agent Base Architecture](doc/BKL_Business_Agent_Base_Architecture.md)。
-
-业务智能体基座迭代路线见 [BKL Business Agent Base Roadmap](doc/BKL_Business_Agent_Base_Roadmap.md)。
-
-详细架构决策见 [BKL Core Engine Installation Forms](doc/BKL_Core_Engine_Installation_Forms.md)。
-
-Skill 运行请求和路由选择见 [BKL Skill Run Request and Routing](doc/BKL_Skill_Run_Request_and_Routing.md)。
-
-Agent 工程化设计见 [BKL Agent Runtime Engineering Plan](doc/BKL_Agent_Runtime_Engineering.md)。
-
-代码目录结构和文件职责见 [BKL Project Structure](doc/BKL_Project_Structure.md)。
-
-### Skill 格式
-
-Skill 包只支持一套规范：标准 `SKILL.md` + BKL `bkl.skill.json`。
-
-`SKILL.md` 遵循行业常见 Skill 形态：YAML frontmatter 只保留标准元数据 `name` 和 `description`，后面是 Markdown instructions。BKL 引擎自己的运行时配置不写进 `SKILL.md`，统一放在同目录的 `bkl.skill.json`。
-
-```text
-talking-video/
-  SKILL.md
-  bkl.skill.json
-  schemas/input.schema.json
-  schemas/output.schema.json
-  examples/examples.json
-```
-
-```md
----
-name: talking-video
-description: Use when generating a structured talking-video draft.
----
-
-# AI 口播视频生成
-
-Follow the workflow and return JSON matching `schemas/output.schema.json`.
-```
-
-```json
-{
-  "id": "talking-video",
-  "version": "0.1.0",
-  "input_schema": "schemas/input.schema.json",
-  "output_schema": "schemas/output.schema.json",
-  "model": {
-    "profile": "mock"
-  },
-  "tools": {
-    "allow": [
-      "subtitle_generate_srt"
-    ]
-  }
-}
-```
-
-### 开发环境
+- Python `>= 3.12`（项目当前也在 Python 3.14 环境完成测试）
+- [uv](https://docs.astral.sh/uv/)；推荐用于依赖和命令执行
+- 真实模型运行时需要对应服务的 URL、模型名和密钥
 
 安装开发依赖：
 
@@ -119,141 +93,35 @@ Follow the workflow and return JSON matching `schemas/output.schema.json`.
 uv --cache-dir .uv-cache sync --extra dev
 ```
 
-运行基础检查：
+安装命令行工具（在仓库根目录重复执行可升级）：
 
 ```bash
-uv --cache-dir .uv-cache run --extra dev pytest
-uv --cache-dir .uv-cache run --extra dev ruff check .
-uv --cache-dir .uv-cache run --extra dev mypy bkl_engine
-```
-
-查看 CLI 版本：
-
-```bash
+uv tool install --force --upgrade .
 bkl --version
 ```
 
-### 模型配置
+若终端找不到 `bkl`，执行 `uv tool update-shell` 后重开终端。
 
-模型配置位于 `bkl.yaml`。可以同时配置多个 profile，并通过 `models.active_profile` 选择当前启用的模型。
+### 不配置密钥的本地验证
 
-可以用启动向导生成配置：
-
-```bash
-uv --cache-dir .uv-cache run --extra dev bkl init \
-  --protocol openai-compatible \
-  --profile xfyun_openai \
-  --base-url https://maas-coding-api.cn-huabei-1.xf-yun.com/v2 \
-  --model astron-code-latest \
-  --api-key "你的密钥"
-```
-
-如果当前目录已经有 `bkl.yaml`，`bkl init` 会拒绝覆盖。确认要替换现有配置时加 `--force`；如果要保留现有配置，用 `--config bkl.xfyun.yaml --env-file .env.xfyun` 写入另一组文件。
-
-也可以复制示例配置：
+以下命令不传 `--config`，CLI 会创建测试用 Mock 引擎：
 
 ```bash
-cp bkl.example.yaml bkl.yaml
-```
-
-在 `.env` 中配置密钥和模型，不要把真实密钥提交到 git：
-
-```bash
-OPENAI_COMPATIBLE_BASE_URL=https://maas-coding-api.cn-huabei-1.xf-yun.com/v2
-OPENAI_AUTH_TOKEN=...
-OPENAI_MODEL=astron-code-latest
-
-ANTHROPIC_BASE_URL=https://maas-coding-api.cn-huabei-1.xf-yun.com/anthropic
-ANTHROPIC_AUTH_TOKEN=...
-ANTHROPIC_MODEL=astron-code-latest
-```
-
-支持的协议：
-
-- `openai-compatible`：调用 `{base_url}/chat/completions`
-- `anthropic`：调用 `{base_url}/v1/messages`
-
-配置文件只保存环境变量名称，不保存密钥值。
-
-### Catalog 持久化
-
-`bkl tool register` 和 `bkl skill register` 默认会写入 `.bkl/catalog.json`。`bkl serve` 启动时会读取这个 catalog，因此服务重启后仍能看到已导入的 Tool 和 Skill。
-
-```bash
-uv --cache-dir .uv-cache run --extra dev bkl tool register \
-  resources/tools/subtitle_generate_srt
-
-uv --cache-dir .uv-cache run --extra dev bkl skill register \
-  resources/skills/talking-video
-```
-
-可以通过 `--catalog` 指定其他 catalog 文件，便于测试。当前产品底座不把这个文件当作全局技能市场使用，它只是本地运行时可加载 Tool/Skill 包的缓存。
-
-面向业务使用时，Skill 先安装到 workspace，再由 identity 绑定可使用的 Skill。这样前期保持一个工作区、一个身份也能独立管理和修改自己的技能；后续如果需要全局技能市场，可以在 workspace catalog 之上再加分发层。
-
-`SkillEngine.load()` 同时会使用同目录下的工作区和会话状态文件：
-
-- `.bkl/workspaces.json`：保存 workspace、identity、workspace 安装/启停的 Skill，以及 identity 绑定的 Skill。
-- `.bkl/sessions.json`：保存 chat session、messages、turns、run_ids、workspace 和 identity 元数据。
-- `.bkl/runs.json`：保存 Skill/Workflow run 的最终状态、输出、错误和 usage 摘要。
-- `.bkl/traces.json`：保存运行过程事件；敏感字段会按 key 自动脱敏。
-- `.bkl/policies.json`：保存 workspace / identity / global 级 Tool allow、ask、deny 规则，以及 Tool 审批记录。
-- `.bkl/secrets.json`：保存本地 SecretStore；API 只返回 metadata，不返回 secret 明文。
-
-`.bkl/` 已加入 `.gitignore`。测试模式 `SkillEngine.create_for_testing()` 仍使用内存 store，避免测试污染本地状态。
-
-Workspace Skill Catalog API：
-
-- `POST /workspaces/{workspace_id}/skills`：把已注册的 Skill 安装到当前 workspace。
-- `GET /workspaces/{workspace_id}/skills`：查看当前 workspace 的 Skill 目录。
-- `PATCH /workspaces/{workspace_id}/skills/{skill_id}`：启用或停用 workspace 内的 Skill。
-- `POST /workspaces/{workspace_id}/identities/{identity_id}/skills`：把 workspace 已安装且启用的 Skill 绑定给 identity。
-
-### CLI 示例
-
-启动 HTTP 服务：
-
-```bash
-uv --cache-dir .uv-cache run --extra dev bkl serve \
-  --host 127.0.0.1 \
-  --port 8000 \
-  --config bkl.yaml
-```
-
-启动 HTTP/SSE/WebSocket 网关：
-
-```bash
-bkl gateway \
-  --host 127.0.0.1 \
-  --port 8000 \
-  --config bkl.yaml
-```
-
-执行示例 Python Tool：
-
-```bash
+# 验证 Python Tool 的 stdin/stdout 与 Schema 合约
 uv --cache-dir .uv-cache run --extra dev bkl tool test \
   resources/tools/subtitle_generate_srt \
   resources/inputs/subtitle_input.json \
   --output json
-```
 
-使用 Mock 模型运行示例 Skill：
-
-```bash
+# 运行带 Tool 的 Skill
 uv --cache-dir .uv-cache run --extra dev bkl skill run \
   talking-video \
   resources/inputs/talking-video-input.json \
   --skills-dir resources/skills \
   --tools-dir resources/tools \
   --output json
-```
 
-返回里的 `output` 是业务结果，`trace_summary` 是执行过程摘要，`artifacts` 是登记到 ArtifactStore 的文件产物。普通 Skill 会把最终输出保存为 `data/artifacts/<run_id>/<skill-id>-output.json`，路径会出现在 `artifacts[0].uri`。`Mock script for ...` 表示当前使用 mock 模型配置，只用于本地 smoke test；真实内容生成需要配置真实模型并传入 `--config bkl.yaml`。
-
-运行「内容视频生产工作流」示例：
-
-```bash
+# 运行内容视频 DAG 工作流
 uv --cache-dir .uv-cache run --extra dev bkl skill run \
   content-video-workflow \
   resources/inputs/content-video-workflow-input.json \
@@ -262,268 +130,245 @@ uv --cache-dir .uv-cache run --extra dev bkl skill run \
   --output json
 ```
 
-该 Workflow Skill 会按顺序运行多个子 Skill，并输出从想法到分镜提示词的结构化资产：
+Mock 输出中的 `Mock script for ...` 仅说明运行链路正常，不应当作真实模型生成质量。
+
+### 启动本地 API
+
+先注册资源到 catalog：
+
+```bash
+uv --cache-dir .uv-cache run --extra dev bkl tool register resources/tools/subtitle_generate_srt
+uv --cache-dir .uv-cache run --extra dev bkl skill register resources/skills/talking-video
+```
+
+再启动服务：
+
+```bash
+uv --cache-dir .uv-cache run --extra dev bkl serve \
+  --host 127.0.0.1 --port 8000 --config bkl.yaml
+```
+
+可访问 `http://127.0.0.1:8000/health` 检查健康状态，或访问 `http://127.0.0.1:8000/ui` 使用内置运行控制台。`gateway` 与 `serve` 当前都启动同一 FastAPI 应用；前者只是为网关部署场景保留的 CLI 别名。
+
+## 配置真实模型
+
+`bkl.yaml` 支持多个模型 profile，只保存环境变量名，不保存真实密钥。可用向导初始化：
+
+```bash
+uv --cache-dir .uv-cache run --extra dev bkl init \
+  --protocol openai-compatible \
+  --profile production \
+  --base-url https://example.com/v1 \
+  --model your-model \
+  --api-key "仅写入本地 .env 的密钥"
+```
+
+也可基于 `bkl.example.yaml` 编写：
+
+```yaml
+models:
+  active_profile: production
+  profiles:
+    production:
+      protocol: openai-compatible # 或 anthropic
+      base_url: ${OPENAI_COMPATIBLE_BASE_URL}
+      api_key_env: OPENAI_AUTH_TOKEN
+      model: ${OPENAI_MODEL}
+      timeout_seconds: 180
+      max_tokens: 16000
+```
+
+`.env` 示例：
+
+```dotenv
+OPENAI_COMPATIBLE_BASE_URL=https://example.com/v1
+OPENAI_AUTH_TOKEN=replace-me
+OPENAI_MODEL=your-model
+```
+
+支持协议：
+
+- `mock`：本地测试专用；
+- `openai-compatible`：请求 `{base_url}/chat/completions`；
+- `anthropic`：请求 `{base_url}/v1/messages`。
+
+为真实环境创建独立配置文件和 `.env`，例如 `bkl.production.yaml` 与 `.env.production`；不要提交真实密钥。
+
+## Skill 与 Tool 包规范
+
+### Skill 包
 
 ```text
-content-brief-planner
-  -> hook-plan-generator
-  -> style-bible-planner
-  -> talking-script-writer
-  -> script-segmenter
-  -> storyboard-designer
-  -> render-prompt-builder
+my-skill/
+├── SKILL.md                    # 标准说明、frontmatter 仅含 name/description
+├── bkl.skill.json              # BKL 运行时配置
+├── schemas/
+│   ├── input.schema.json
+│   └── output.schema.json
+└── examples/examples.json      # 推荐提供
 ```
 
-最终结果包含 `ContentBrief`、`HookPlan`、`StyleBible`、`Script`、`ScriptSegments`、`Storyboard` 和 `RenderPromptPack`，并会在 artifact 目录写入 `content-video-workflow.json`。真实视频生成、TTS、FFmpeg 或 Remotion 合成可以作为后续 Provider Adapter 或独立工作流继续接入。
-
-运行「王不懂的小实验」示例 Skill：
-
-```bash
-uv --cache-dir .uv-cache run --extra dev bkl skill run \
-  wangbudong-experiment \
-  resources/inputs/wangbudong-experiment-input.json \
-  --skills-dir resources/skills \
-  --tools-dir resources/tools \
-  --output json
-```
-
-该 Skill 会调用 `wangbudong_write_prompt_pack`，在本次 run 的 artifact 目录里写入 `00-实验拆解.md`、`01-首图提示词.md`、`02-分步骤提示词.md`、`03-小红书文案.md`。
-
-使用 Agent 模式从自然语言运行 Skill：
-
-```bash
-uv --cache-dir .uv-cache run --extra dev bkl chat \
-  --once "帮我生成60秒小红书口播视频，主题是程序员护眼台灯" \
-  --skills-dir resources/skills \
-  --tools-dir resources/tools \
-  --output json
-```
-
-Agent 会先从已注册或扫描到的 Skill 中选择候选 `skill_id`，再根据目标 Skill 的 `schemas/input.schema.json` 抽取输入。缺少必填字段时不会运行 Skill，而是返回 `needs_input`。
-
-输入一句内容并输出分镜提示词：
-
-```bash
-bkl chat \
-  --once "介绍openspec" \
-  --skill content-video-workflow \
-  --skills-dir resources/skills \
-  --tools-dir resources/tools \
-  --config bkl.yaml \
-  --view prompts \
-  --output json
-```
-
-这里 `--config bkl.yaml` 会使用真实模型配置；不加时 CLI 默认使用 mock 测试模型。`--view prompts` 只输出 `storyboard` 和 `render_prompt_pack`。
-
-查看 workflow 执行过程：
-
-```bash
-bkl chat \
-  --once "介绍openspec" \
-  --skill content-video-workflow \
-  --skills-dir resources/skills \
-  --tools-dir resources/tools \
-  --config bkl.yaml \
-  --view trace \
-  --output json
-```
-
-`--view trace` 展示可观测执行过程：`trace_summary`、`workflow_steps` 和 `artifacts`。每个 workflow step 会带自己的子 run `trace_summary` 和 `artifacts`。它不会暴露模型隐藏思考链；对齐 OpenAI/Anthropic 的做法，应展示 tool calls、事件、状态和可审计中间产物。
-
-使用 `bkl.yaml + .env` 中的真实模型配置运行示例 Skill：
-
-```bash
-uv --cache-dir .uv-cache run --extra dev bkl skill run \
-  talking-video \
-  resources/inputs/talking-video-input.json \
-  --skills-dir resources/skills \
-  --tools-dir resources/tools \
-  --config bkl.yaml \
-  --output json
-```
-
-判断 Skill 是否真正触发 Tool，看返回里的 `trace_summary`：
-
-```json
-{
-  "llm_called": 2,
-  "tool_called": 1,
-  "tool_succeeded": 1,
-  "tool_failed": 0
-}
-```
-
-### Python SDK 示例
-
-```python
-import asyncio
-
-from bkl_engine.engine import SkillEngine
-
-
-async def main() -> None:
-    engine = SkillEngine.load("bkl.yaml")
-    await engine.register_tool("resources/tools/subtitle_generate_srt")
-    await engine.register_skill("resources/skills/talking-video")
-    result = await engine.run_skill(
-        "talking-video",
-        {
-            "topic": "适合程序员的护眼台灯",
-            "platform": "xiaohongshu",
-            "duration_seconds": 60,
-        },
-    )
-    print(result.model_dump(mode="json"))
-
-
-asyncio.run(main())
-```
-
-### API 示例
-
-启动 FastAPI：
-
-```bash
-uv --cache-dir .uv-cache run --extra dev bkl serve --config bkl.yaml
-```
-
-注册 Tool 和 Skill，然后运行：
-
-```bash
-curl -X POST http://127.0.0.1:8000/tools/register \
-  -H 'Content-Type: application/json' \
-  -d '{"path":"resources/tools/subtitle_generate_srt"}'
-
-curl -X POST http://127.0.0.1:8000/skills/register \
-  -H 'Content-Type: application/json' \
-  -d '{"path":"resources/skills/talking-video"}'
-
-curl -X POST http://127.0.0.1:8000/skills/talking-video/runs \
-  -H 'Content-Type: application/json' \
-  -d '{"input":{"topic":"适合程序员的护眼台灯","platform":"xiaohongshu","duration_seconds":60},"mode":"sync"}'
-
-curl -X POST http://127.0.0.1:8000/chat/messages \
-  -H 'Content-Type: application/json' \
-  -d '{"message":"帮我生成60秒小红书口播视频，主题是程序员护眼台灯"}'
-```
-
----
-
-## English
-
-BKL Skill Engine is a reusable Python runtime for loading standard `SKILL.md` packages, executing Tools, and returning structured results, Artifacts, and Trace data.
-
-### Current Capabilities
-
-- Load local Tool packages from `tool.yaml`
-- Execute Python Tools through JSON stdin/stdout
-- Load standard Skill packages from `SKILL.md` frontmatter + Markdown instructions + `bkl.skill.json`
-- Run a synchronous Skill Runtime with a tool-calling loop
-- Support Mock, OpenAI-compatible, and Anthropic-compatible model protocols
-- Support multiple model profiles through `bkl.yaml + .env`, with `models.active_profile` selecting the active one
-- Record in-memory Runs and Traces
-- Save local Artifacts
-- Share the same `SkillEngine` facade across SDK, CLI, and FastAPI
-- Import simple OpenAPI operations as API Tools
-- Support the first Agent orchestration slice: natural-language Skill routing, scene mapping, input resolution, `bkl chat --once`, and `/chat/messages`
-
-### Installation Forms
-
-BKL keeps one Core Engine and exposes different entrypoints for different deployment targets:
-
-- **CLI / SDK**: local scripts, CI, developer workflows, and server batch jobs
-- **Server / HTTP**: deploy FastAPI through `bkl serve` for other systems to call
-- **Desktop / Local GUI**: a future local UI can start `bkl serve` locally and manage models, Tools, Skills, and runs through HTTP
-
-Skill, Tool, and model configuration formats stay the same across all forms.
-
-See [BKL Business Agent Base Architecture](doc/BKL_Business_Agent_Base_Architecture.md) for the target DDD architecture.
-
-See [BKL Business Agent Base Roadmap](doc/BKL_Business_Agent_Base_Roadmap.md) for the architecture hardening roadmap.
-
-See [BKL Core Engine Installation Forms](doc/BKL_Core_Engine_Installation_Forms.md) for the detailed architecture decision.
-
-See [BKL Skill Run Request and Routing](doc/BKL_Skill_Run_Request_and_Routing.md) for run request and routing details.
-
-See [BKL Agent Runtime Engineering Plan](doc/BKL_Agent_Runtime_Engineering.md) for the Agent orchestration design.
-
-See [BKL Project Structure](doc/BKL_Project_Structure.md) for source layout and file responsibilities.
-
-### Skill Format
-
-Only one Skill package format is supported: standard `SKILL.md` + BKL `bkl.skill.json`.
-
-`SKILL.md` follows the common Skill shape: YAML frontmatter contains only the standard `name` and `description` metadata, followed by Markdown instructions. BKL runtime configuration does not live inside `SKILL.md`; it belongs in the sibling `bkl.skill.json` file.
-
-```text
-talking-video/
-  SKILL.md
-  bkl.skill.json
-  schemas/input.schema.json
-  schemas/output.schema.json
-  examples/examples.json
-```
+`SKILL.md` 的运行说明面向模型；模型、工具白名单、限额和工作流配置放在 `bkl.skill.json`，不要混写：
 
 ```md
 ---
-name: talking-video
-description: Use when generating a structured talking-video draft.
+name: my-skill
+description: 将用户输入转为结构化结果。
 ---
 
-# AI Talking Video Generation
+# 执行要求
 
-Follow the workflow and return JSON matching `schemas/output.schema.json`.
+遵循输入内容，必要时调用允许的 Tool；最终返回必须符合输出 Schema。
 ```
 
 ```json
 {
-  "id": "talking-video",
+  "id": "my-skill",
   "version": "0.1.0",
   "input_schema": "schemas/input.schema.json",
   "output_schema": "schemas/output.schema.json",
-  "model": {
-    "profile": "mock"
-  },
-  "tools": {
-    "allow": [
-      "subtitle_generate_srt"
-    ]
+  "model": { "profile": "production" },
+  "tools": { "allow": ["my-tool"] },
+  "limits": {
+    "max_iterations": 3,
+    "max_tool_calls": 5,
+    "timeout_seconds": 120,
+    "max_tokens": 8000
   }
 }
 ```
 
-### Development
+工作流 Skill 以 `workflow.steps` 引用其他已注册 Skill。步骤可以通过 `depends_on` 构成 DAG，运行时会在 `max_parallel_steps` 限制内并行执行已满足依赖的步骤。每个子步骤都产生独立 Run，并在父 Run 的 trace 中关联。
 
-Install or upgrade the CLI from the repository root:
+### Tool 包
 
-```bash
-uv tool install --force --upgrade .
+```text
+my-tool/
+├── tool.yaml
+├── input.schema.json
+├── output.schema.json
+└── main.py                     # type: python 时需要
 ```
 
-Verify the installed command:
+Python Tool 的约定：从标准输入读取一个 JSON 对象，只向标准输出写一个 JSON 对象；诊断信息写标准错误。运行时会在调用前后分别校验 input/output schema，并传入：
 
-```bash
-bkl --version
+- `BKL_RUN_ID`
+- `BKL_TOOL_CALL_ID`
+- `BKL_ARTIFACT_DIR`
+
+Tool 产物必须写入 `BKL_ARTIFACT_DIR`，然后把路径放入输出，由 Skill Runtime 登记为 Artifact。Python Tool 在独立子进程执行，但**不是安全沙箱**；只能安装和执行可信包。
+
+API Tool 目前支持 GET query 参数及 POST/PUT/PATCH JSON body，可由简单 OpenAPI operation 导入。复杂的 path 参数、认证形态、分页和非 JSON 响应需要在生产化阶段增强或先以自定义 Tool 包实现。
+
+## 使用方式：SDK、CLI、HTTP
+
+### SDK
+
+```python
+import asyncio
+from bkl_engine.engine import SkillEngine
+
+async def main() -> None:
+    engine = SkillEngine.load("bkl.yaml", catalog_path=".bkl/catalog.json")
+    await engine.register_tool("resources/tools/subtitle_generate_srt")
+    await engine.register_skill("resources/skills/talking-video")
+    result = await engine.run_skill(
+        "talking-video",
+        {"topic": "程序员护眼台灯", "duration_seconds": 60},
+    )
+    print(result.model_dump(mode="json"))
+
+asyncio.run(main())
 ```
 
-If `bkl` is not on `PATH`, run:
+测试或脚本中没有真实模型时使用 `SkillEngine.create_for_testing()`；生产入口使用 `SkillEngine.load()` 以加载配置和持久化状态。
+
+### CLI
+
+常用命令：
 
 ```bash
-uv tool update-shell
+bkl tool list
+bkl skill list
+bkl skill run <skill-id> <input.json> --skills-dir resources/skills --tools-dir resources/tools
+bkl chat --once "生成 60 秒程序员护眼台灯口播视频" --output json
+bkl run list
+bkl trace show <run-id>
+bkl workspace ensure demo --name "演示空间"
+bkl workspace scan demo --identity-id alice
 ```
 
-Then restart your shell. Example commands below assume they are run from the repository root, because the sample Tools, Skills, and inputs live in this checkout.
+运行状态为 `waiting_approval` 时，先在 API 或运行控制台处理 Tool 审批，再执行 `bkl`/API 的 run resume 操作。CLI 的完整参数请用 `bkl --help`、`bkl skill --help` 查看。
 
-For a full usage guide, see [BKL Usage Guide](doc/BKL_Usage_Guide.md).
+### HTTP API
 
-Install development dependencies:
+服务启动后，FastAPI 自动提供 OpenAPI 文档：`/docs`。主要资源如下：
+
+| 资源 | 关键接口 |
+| --- | --- |
+| 基础状态 | `GET /health`、`GET /ui` |
+| 包注册 | `POST /tools/register`、`GET /tools`、`POST /skills/register`、`GET /skills` |
+| 运行 | `POST /skills/{skill_id}/runs`、`GET /runs/{run_id}`、`POST /runs/{run_id}/resume` |
+| 可观测性 | `GET /runs/{run_id}/trace`、`GET /runs/{run_id}/artifacts`、`GET /artifacts/{artifact_id}` |
+| Agent | `POST /chat/messages`、`POST /chat/messages/events`、`WS /ws/chat` |
+| 流式 Skill | `POST /skills/{skill_id}/runs/events`、`WS /ws/skills/{skill_id}/runs` |
+| 工作区治理 | `/workspaces` 下的 identity、skills、secrets、tool-policies 路由 |
+| 审批 | `GET /tool-approvals`、`POST /tool-approvals/{approval_id}/approve`、`.../deny` |
+
+直接运行 Skill：
 
 ```bash
-uv --cache-dir .uv-cache sync --extra dev
+curl -X POST http://127.0.0.1:8000/skills/talking-video/runs \
+  -H 'content-type: application/json' \
+  -d '{"input":{"topic":"程序员护眼台灯","duration_seconds":60}}'
 ```
 
-Run baseline checks:
+通过 Agent：
+
+```bash
+curl -X POST http://127.0.0.1:8000/chat/messages \
+  -H 'content-type: application/json' \
+  -d '{"message":"生成 60 秒程序员护眼台灯口播视频"}'
+```
+
+Agent 的自动路由当前是可解释的关键词/元数据评分，不是 LLM 路由。生产业务应优先传 `skill_id` 或维护稳定的 `scene_id` 映射；这比依赖自然语言猜测更可控。
+
+## 运行数据与安全边界
+
+默认本地运行会创建以下状态：
+
+```text
+.bkl/
+├── catalog.json       # 已注册 Tool/Skill 的路径缓存
+├── workspaces.json    # workspace、identity、Skill 绑定
+├── sessions.json      # chat session 与 turn
+├── runs.json          # 最终 Run 状态和输出
+├── traces.json        # 过程事件
+├── policies.json      # Tool 策略和审批记录
+├── secrets.json       # SecretStore（本地明文，禁止用于正式生产）
+└── memory/            # Markdown 记忆
+
+data/artifacts/<run-id>/
+└── ...                # Tool 与 Skill 产生的文件
+```
+
+这些目录已被 `.gitignore` 忽略。Trace 会按 `authorization`、`api_key`、`password`、`secret`、`token`、`credential` 等键名做脱敏，但不要把敏感信息直接放入自由文本 prompt、artifact 或 Tool 的标准输出。
+
+当前 HTTP 服务没有认证和租户鉴权中间件；`secrets.json` 也是明文 JSON，且 JSON 文件存储不具备多进程并发写入保障。因此默认只能在本机或受控内网环境使用，不能直接公网暴露。
+
+## 内置示例资源
+
+| Skill | 用途 |
+| --- | --- |
+| `talking-video` | 口播视频草稿，调用 `subtitle_generate_srt`。 |
+| `wangbudong-experiment` | 亲子科学实验提示词包，调用 `wangbudong_write_prompt_pack`。 |
+| `content-video-workflow` | 从 brief、hook、脚本、分段、分镜到渲染提示词的 DAG。 |
+| `content-brief-planner`、`hook-plan-generator`、`style-bible-planner` | 内容策划子步骤。 |
+| `talking-script-writer`、`script-segmenter`、`storyboard-designer`、`render-prompt-builder` | 内容视频生产子步骤。 |
+
+Tool 包包括字幕生成、亲子实验提示词写入和 mock 视频渲染。后两者主要用于验证文件产物和工具调用链，接真实供应商前需要实现正式 API Tool、认证、配额和失败补偿。
+
+## 开发、测试与排障
 
 ```bash
 uv --cache-dir .uv-cache run --extra dev pytest
@@ -531,254 +376,43 @@ uv --cache-dir .uv-cache run --extra dev ruff check .
 uv --cache-dir .uv-cache run --extra dev mypy bkl_engine
 ```
 
-Check the CLI version:
+测试目录按子系统组织：
 
-```bash
-bkl --version
-```
+- `test_skill_loader.py`、`test_tool_loader.py`：包规范与加载；
+- `test_skill_runtime.py`、`test_content_video_workflow.py`：运行时、重试、DAG；
+- `test_agent_runtime.py`：路由、输入补齐、会话；
+- `test_python_tool_runner.py`、`test_openapi_importer.py`：Tool；
+- `test_api_cli.py`、`test_cli.py`：接口层；
+- `test_stores.py`、`test_catalog_store.py`：本地存储。
 
-### Model Configuration
+常见问题：
 
-Model providers are configured in `bkl.yaml`. You can define multiple profiles and choose the active one with `models.active_profile`.
+| 现象 | 优先检查 |
+| --- | --- |
+| 模型调用失败 | `bkl.yaml` 的 active profile、`.env` 环境变量、base URL、协议是否匹配。 |
+| Tool 无法执行 | `tool.yaml` 的 entry/schema、Tool 是否已注册、Skill allow 列表与 identity policy。 |
+| Run 停在审批 | `GET /tool-approvals`，处理对应记录后恢复 Run。 |
+| 服务重启后资源消失 | 使用 `bkl tool/skill register` 写入 `.bkl/catalog.json`，并以相同 `--catalog` 启动。 |
+| 输出校验失败 | 对照 Skill/Tool output schema，确保模型或 Tool 返回 JSON object 而不是额外文本。 |
 
-Generate configuration with the init command:
+## 生产化与迭代路线
 
-```bash
-uv --cache-dir .uv-cache run --extra dev bkl init \
-  --protocol openai-compatible \
-  --profile xfyun_openai \
-  --base-url https://maas-coding-api.cn-huabei-1.xf-yun.com/v2 \
-  --model astron-code-latest \
-  --api-key "your-api-key"
-```
+建议按“先安全可控上线，再扩展平台能力”的顺序推进：
 
-If `bkl.yaml` already exists, `bkl init` refuses to overwrite it. Add `--force` only when you want to replace the existing config. To keep the existing config, use `--config bkl.xfyun.yaml --env-file .env.xfyun` for a separate file pair.
+1. **上线门槛**：在 API 网关加入认证、workspace/identity 授权、审计；将 JSON stores 迁移到 PostgreSQL；将 SecretStore 换成 KMS/Vault；限制可信 Tool 来源并隔离 Python Tool。
+2. **稳定性**：为长任务引入队列/worker、幂等键、取消、重试策略和死信处理；Artifact 改为对象存储；加入结构化日志、指标、告警和 trace 导出。
+3. **业务规模化**：建立 Skill/Tool 版本、发布、回滚、评测和灰度机制；维护场景映射；给每个业务线配置配额、成本归集、审批规则。
+4. **智能化增强**：以可评测、可回退的方式升级 LLM 路由和记忆检索；保留明确 `skill_id`/scene 路径作为确定性兜底。
 
-You can also copy the example config:
+每次改动都应同时更新包 Schema、测试和变更记录。完整的风险清单、目标架构与按阶段验收标准见 [当前能力评估与上线路线](doc/当前能力评估与上线路线.md) 和 [技术设计与生产化](doc/技术设计与生产化.md)。
 
-```bash
-cp bkl.example.yaml bkl.yaml
-```
+## 文档索引
 
-Set credentials and model names in `.env`. Do not commit real secrets:
+- [架构总览与演进](doc/架构总览与演进.md)：当前分层、主要调用链、依赖规则和目标架构。
+- [技术设计与生产化](doc/技术设计与生产化.md)：契约、运行时、模型、Tool、存储、安全、部署建议。
+- [当前能力评估与上线路线](doc/当前能力评估与上线路线.md)：基于代码与测试的成熟度结论、风险与迭代计划。
+- [使用指南](doc/BKL_Usage_Guide.md)：补充 CLI/HTTP 操作说明。
+- [项目结构](doc/BKL_Project_Structure.md)：历史目录职责说明。
+- [运行调用图](doc/BKL_Runtime_Call_Graph.md)：调用图与时序图。
 
-```bash
-OPENAI_COMPATIBLE_BASE_URL=https://maas-coding-api.cn-huabei-1.xf-yun.com/v2
-OPENAI_AUTH_TOKEN=...
-OPENAI_MODEL=astron-code-latest
-
-ANTHROPIC_BASE_URL=https://maas-coding-api.cn-huabei-1.xf-yun.com/anthropic
-ANTHROPIC_AUTH_TOKEN=...
-ANTHROPIC_MODEL=astron-code-latest
-```
-
-Supported protocols:
-
-- `openai-compatible`: calls `{base_url}/chat/completions`
-- `anthropic`: calls `{base_url}/v1/messages`
-
-Config files store environment variable names only, not secret values.
-
-### Catalog Persistence
-
-`bkl tool register` and `bkl skill register` write to `.bkl/catalog.json` by default. `bkl serve` loads that catalog on startup, so imported Tools and Skills remain available after restart.
-
-```bash
-uv --cache-dir .uv-cache run --extra dev bkl tool register \
-  resources/tools/subtitle_generate_srt
-
-uv --cache-dir .uv-cache run --extra dev bkl skill register \
-  resources/skills/talking-video
-```
-
-Use `--catalog` to select another catalog file for tests. The product base does
-not treat this file as a global Skill marketplace yet; it is only the local
-runtime cache of loadable Tool and Skill packages.
-
-For business use, install Skills into a workspace first, then bind the enabled
-workspace Skills to an identity. This keeps the early product shape simple: one
-workspace and one identity can manage their own editable Skill catalog. A global
-Skill marketplace can be added later as a distribution layer above workspace
-catalogs.
-
-`SkillEngine.load()` also uses local workspace and session state files next to
-the catalog:
-
-- `.bkl/workspaces.json`: stores workspaces, identities, workspace-installed
-  Skills with enabled state, and identity Skill bindings.
-- `.bkl/sessions.json`: stores chat sessions, messages, turns, run ids,
-  workspace metadata, and identity metadata.
-- `.bkl/runs.json`: stores final Skill/Workflow run status, output, errors, and
-  usage summaries.
-- `.bkl/traces.json`: stores execution trace events with automatic redaction for
-  sensitive keys.
-- `.bkl/policies.json`: stores global, workspace, and identity Tool allow, ask,
-  and deny policies plus approval records.
-- `.bkl/secrets.json`: stores the local SecretStore. APIs return metadata only,
-  not secret values.
-
-Workspace Skill Catalog APIs:
-
-- `POST /workspaces/{workspace_id}/skills`: install a registered Skill into the workspace.
-- `GET /workspaces/{workspace_id}/skills`: list workspace Skills.
-- `PATCH /workspaces/{workspace_id}/skills/{skill_id}`: enable or disable a workspace Skill.
-- `POST /workspaces/{workspace_id}/identities/{identity_id}/skills`: bind an enabled workspace Skill to an identity.
-
-### CLI Examples
-
-Start the HTTP service:
-
-```bash
-uv --cache-dir .uv-cache run --extra dev bkl serve \
-  --host 127.0.0.1 \
-  --port 8000 \
-  --config bkl.yaml
-```
-
-Start the HTTP/SSE/WebSocket gateway:
-
-```bash
-bkl gateway \
-  --host 127.0.0.1 \
-  --port 8000 \
-  --config bkl.yaml
-```
-
-Execute the example Python Tool:
-
-```bash
-uv --cache-dir .uv-cache run --extra dev bkl tool test \
-  resources/tools/subtitle_generate_srt \
-  resources/inputs/subtitle_input.json \
-  --output json
-```
-
-Run the example Skill with the mock model:
-
-```bash
-uv --cache-dir .uv-cache run --extra dev bkl skill run \
-  talking-video \
-  resources/inputs/talking-video-input.json \
-  --skills-dir resources/skills \
-  --tools-dir resources/tools \
-  --output json
-```
-
-In the response, `output` is the business result, `trace_summary` is the execution-process summary, and `artifacts` lists files registered by the ArtifactStore. A normal Skill saves final output to `data/artifacts/<run_id>/<skill-id>-output.json`, and the path appears in `artifacts[0].uri`. `Mock script for ...` means the mock model profile is active for local smoke tests; use a real model config with `--config bkl.yaml` for real generation.
-
-Run the Wangbudong experiment example Skill:
-
-```bash
-uv --cache-dir .uv-cache run --extra dev bkl skill run \
-  wangbudong-experiment \
-  resources/inputs/wangbudong-experiment-input.json \
-  --skills-dir resources/skills \
-  --tools-dir resources/tools \
-  --output json
-```
-
-This Skill calls `wangbudong_write_prompt_pack` and writes `00-实验拆解.md`, `01-首图提示词.md`, `02-分步骤提示词.md`, and `03-小红书文案.md` into the run artifact directory.
-
-Run a Skill through the Agent layer from natural language:
-
-```bash
-uv --cache-dir .uv-cache run --extra dev bkl chat \
-  --once "帮我生成60秒小红书口播视频，主题是程序员护眼台灯" \
-  --skills-dir resources/skills \
-  --tools-dir resources/tools \
-  --output json
-```
-
-The Agent selects a candidate `skill_id` from registered or scanned Skills, then extracts input from the target Skill's `schemas/input.schema.json`. If required fields are missing, it returns `needs_input` instead of running the Skill.
-
-Run the full content-video workflow from one topic and print only storyboard/render prompts:
-
-```bash
-bkl chat \
-  --once "介绍openspec" \
-  --skill content-video-workflow \
-  --skills-dir resources/skills \
-  --tools-dir resources/tools \
-  --config bkl.yaml \
-  --view prompts \
-  --output json
-```
-
-`--config bkl.yaml` uses your real model profile; without it, the CLI uses the mock test model. `--view prompts` prints only `storyboard` and `render_prompt_pack`.
-
-Run the example Skill with the real model profile from `bkl.yaml + .env`:
-
-```bash
-uv --cache-dir .uv-cache run --extra dev bkl skill run \
-  talking-video \
-  resources/inputs/talking-video-input.json \
-  --skills-dir resources/skills \
-  --tools-dir resources/tools \
-  --config bkl.yaml \
-  --output json
-```
-
-To confirm that the Skill triggered a Tool, check `trace_summary`:
-
-```json
-{
-  "llm_called": 2,
-  "tool_called": 1,
-  "tool_succeeded": 1,
-  "tool_failed": 0
-}
-```
-
-### Python SDK Example
-
-```python
-import asyncio
-
-from bkl_engine.engine import SkillEngine
-
-
-async def main() -> None:
-    engine = SkillEngine.load("bkl.yaml")
-    await engine.register_tool("resources/tools/subtitle_generate_srt")
-    await engine.register_skill("resources/skills/talking-video")
-    result = await engine.run_skill(
-        "talking-video",
-        {
-            "topic": "适合程序员的护眼台灯",
-            "platform": "xiaohongshu",
-            "duration_seconds": 60,
-        },
-    )
-    print(result.model_dump(mode="json"))
-
-
-asyncio.run(main())
-```
-
-### API Example
-
-Start FastAPI:
-
-```bash
-uv --cache-dir .uv-cache run --extra dev bkl serve --config bkl.yaml
-```
-
-Register a Tool and Skill, then run:
-
-```bash
-curl -X POST http://127.0.0.1:8000/tools/register \
-  -H 'Content-Type: application/json' \
-  -d '{"path":"resources/tools/subtitle_generate_srt"}'
-
-curl -X POST http://127.0.0.1:8000/skills/register \
-  -H 'Content-Type: application/json' \
-  -d '{"path":"resources/skills/talking-video"}'
-
-curl -X POST http://127.0.0.1:8000/skills/talking-video/runs \
-  -H 'Content-Type: application/json' \
-  -d '{"input":{"topic":"适合程序员的护眼台灯","platform":"xiaohongshu","duration_seconds":60},"mode":"sync"}'
-
-curl -X POST http://127.0.0.1:8000/chat/messages \
-  -H 'Content-Type: application/json' \
-  -d '{"message":"帮我生成60秒小红书口播视频，主题是程序员护眼台灯"}'
-```
+历史设计文档保留用于追溯；以本 README 和上述三份中文文档作为当前工程实施基线。
