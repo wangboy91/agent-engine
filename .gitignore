@@ -11,5 +11,7 @@ __pycache__/
 data/
 dist/
 build/
-.codegraph/
-企业智能体参考截图/*
+.codex/
+prototype/screenshots/
+.claude/
+.serena/

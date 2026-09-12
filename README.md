@@ -42,7 +42,7 @@ BKL 的目标不是另一个聊天 UI，而是业务智能体的执行基座：�
 | 可观测性 | 基础可用 | Run、Trace、Artifact、流式 trace 事件、敏感键脱敏 |
 | 生产级平台能力 | 未完成 | 认证鉴权、关系型数据库、分布式任务、限流、指标告警、密钥托管、沙箱隔离 |
 
-`resources/` 中的内容视频和亲子实验包是演示/验证资源。多数 Skill 的默认模型 profile 为 `mock`，因此它们验证编排和契约，不代表已经接入真实内容生产服务。
+`engine/resources/` 中的内容视频和亲子实验包是演示/验证资源。多数 Skill 的默认模型 profile 为 `mock`，因此它们验证编排和契约，不代表已经接入真实内容生产服务。
 
 ## 核心概念
 
@@ -77,7 +77,7 @@ flowchart TB
   Engine --> Workspace[Workspace / Session / Secret stores]
 ```
 
-代码按领域、应用、基础设施和接口分层。`bkl_engine/engine.py` 中的 `SkillEngine` 是唯一公共门面；CLI、HTTP 和 SDK 不应绕过它直接拼装运行时依赖。更完整的模块职责、调用序列与演进边界请阅读 [架构总览与演进](doc/架构总览与演进.md)。
+代码按领域、应用、基础设施和接口分层。`engine/app/engine.py` 中的 `SkillEngine` 是唯一公共门面；CLI、HTTP 和 SDK 不应绕过它直接拼装运行时依赖。更完整的模块职责、调用序列与演进边界请阅读 [架构总览与演进](docs/架构总览与演进.md)。
 
 ## 快速开始
 
@@ -90,12 +90,14 @@ flowchart TB
 安装开发依赖：
 
 ```bash
+cd engine
 uv --cache-dir .uv-cache sync --extra dev
 ```
 
 安装命令行工具（在仓库根目录重复执行可升级）：
 
 ```bash
+cd engine
 uv tool install --force --upgrade .
 bkl --version
 ```
@@ -107,6 +109,7 @@ bkl --version
 以下命令不传 `--config`，CLI 会创建测试用 Mock 引擎：
 
 ```bash
+cd engine
 # 验证 Python Tool 的 stdin/stdout 与 Schema 合约
 uv --cache-dir .uv-cache run --extra dev bkl tool test \
   resources/tools/subtitle_generate_srt \
@@ -137,6 +140,7 @@ Mock 输出中的 `Mock script for ...` 仅说明运行链路正常，不应当�
 先注册资源到 catalog：
 
 ```bash
+cd engine
 uv --cache-dir .uv-cache run --extra dev bkl tool register resources/tools/subtitle_generate_srt
 uv --cache-dir .uv-cache run --extra dev bkl skill register resources/skills/talking-video
 ```
@@ -144,6 +148,7 @@ uv --cache-dir .uv-cache run --extra dev bkl skill register resources/skills/tal
 再启动服务：
 
 ```bash
+cd engine
 uv --cache-dir .uv-cache run --extra dev bkl serve \
   --host 127.0.0.1 --port 8000 --config bkl.yaml
 ```
@@ -155,6 +160,7 @@ uv --cache-dir .uv-cache run --extra dev bkl serve \
 `bkl.yaml` 支持多个模型 profile，只保存环境变量名，不保存真实密钥。可用向导初始化：
 
 ```bash
+cd engine
 uv --cache-dir .uv-cache run --extra dev bkl init \
   --protocol openai-compatible \
   --profile production \
@@ -266,7 +272,7 @@ API Tool 目前支持 GET query 参数及 POST/PUT/PATCH JSON body，可由简�
 
 ```python
 import asyncio
-from bkl_engine.engine import SkillEngine
+from app.engine import SkillEngine
 
 async def main() -> None:
     engine = SkillEngine.load("bkl.yaml", catalog_path=".bkl/catalog.json")
@@ -288,6 +294,7 @@ asyncio.run(main())
 常用命令：
 
 ```bash
+cd engine
 bkl tool list
 bkl skill list
 bkl skill run <skill-id> <input.json> --skills-dir resources/skills --tools-dir resources/tools
@@ -318,6 +325,7 @@ bkl workspace scan demo --identity-id alice
 直接运行 Skill：
 
 ```bash
+cd engine
 curl -X POST http://127.0.0.1:8000/skills/talking-video/runs \
   -H 'content-type: application/json' \
   -d '{"input":{"topic":"程序员护眼台灯","duration_seconds":60}}'
@@ -326,6 +334,7 @@ curl -X POST http://127.0.0.1:8000/skills/talking-video/runs \
 通过 Agent：
 
 ```bash
+cd engine
 curl -X POST http://127.0.0.1:8000/chat/messages \
   -H 'content-type: application/json' \
   -d '{"message":"生成 60 秒程序员护眼台灯口播视频"}'
@@ -371,9 +380,10 @@ Tool 包包括字幕生成、亲子实验提示词写入和 mock 视频渲染。
 ## 开发、测试与排障
 
 ```bash
+cd engine
 uv --cache-dir .uv-cache run --extra dev pytest
 uv --cache-dir .uv-cache run --extra dev ruff check .
-uv --cache-dir .uv-cache run --extra dev mypy bkl_engine
+uv --cache-dir .uv-cache run --extra dev mypy app
 ```
 
 测试目录按子系统组织：
@@ -404,15 +414,15 @@ uv --cache-dir .uv-cache run --extra dev mypy bkl_engine
 3. **业务规模化**：建立 Skill/Tool 版本、发布、回滚、评测和灰度机制；维护场景映射；给每个业务线配置配额、成本归集、审批规则。
 4. **智能化增强**：以可评测、可回退的方式升级 LLM 路由和记忆检索；保留明确 `skill_id`/scene 路径作为确定性兜底。
 
-每次改动都应同时更新包 Schema、测试和变更记录。完整的风险清单、目标架构与按阶段验收标准见 [当前能力评估与上线路线](doc/当前能力评估与上线路线.md) 和 [技术设计与生产化](doc/技术设计与生产化.md)。
+每次改动都应同时更新包 Schema、测试和变更记录。完整的风险清单、目标架构与按阶段验收标准见 [当前能力评估与上线路线](docs/当前能力评估与上线路线.md) 和 [技术设计与生产化](docs/技术设计与生产化.md)。
 
 ## 文档索引
 
-- [架构总览与演进](doc/架构总览与演进.md)：当前分层、主要调用链、依赖规则和目标架构。
-- [技术设计与生产化](doc/技术设计与生产化.md)：契约、运行时、模型、Tool、存储、安全、部署建议。
-- [当前能力评估与上线路线](doc/当前能力评估与上线路线.md)：基于代码与测试的成熟度结论、风险与迭代计划。
-- [使用指南](doc/BKL_Usage_Guide.md)：补充 CLI/HTTP 操作说明。
-- [项目结构](doc/BKL_Project_Structure.md)：历史目录职责说明。
-- [运行调用图](doc/BKL_Runtime_Call_Graph.md)：调用图与时序图。
+- [架构总览与演进](docs/架构总览与演进.md)：当前分层、主要调用链、依赖规则和目标架构。
+- [技术设计与生产化](docs/技术设计与生产化.md)：契约、运行时、模型、Tool、存储、安全、部署建议。
+- [当前能力评估与上线路线](docs/当前能力评估与上线路线.md)：基于代码与测试的成熟度结论、风险与迭代计划。
+- [使用指南](docs/BKL_Usage_Guide.md)：补充 CLI/HTTP 操作说明。
+- [项目结构](docs/BKL_Project_Structure.md)：历史目录职责说明。
+- [运行调用图](docs/BKL_Runtime_Call_Graph.md)：调用图与时序图。
 
 历史设计文档保留用于追溯；以本 README 和上述三份中文文档作为当前工程实施基线。
