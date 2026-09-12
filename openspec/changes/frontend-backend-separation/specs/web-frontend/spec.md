@@ -11,12 +11,12 @@
 
 - **WHEN** 修改任意界面功能
 - **THEN** 变更只发生在 `web/` 目录内
-- **AND** `engine/bkl_engine` 无代码改动
+- **AND** `engine/app` 无代码改动
 
 #### Scenario: 前端不依赖内核内部模块
 
 - **WHEN** 构建 `web/` 项目
-- **THEN** 不存在对 `bkl_engine` 的任何 import 或构建依赖
+- **THEN** 不存在对 `app` 的任何 import 或构建依赖
 
 ### Requirement: 内核只暴露 API 契约
 

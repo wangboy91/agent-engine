@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from app.domain.errors import BklEngineError
+from app.domain.errors import AgentEngineError
 from app.domain.tool import Tool
 from app.infrastructure.package_loaders.tool_loader import load_tool
 
@@ -21,9 +21,9 @@ class InMemoryToolRegistry:
     def get_tool(self, tool_id: str) -> Tool:
         tool = self._tools.get(tool_id)
         if tool is None:
-            raise BklEngineError("TOOL_NOT_FOUND", f"Tool not found: {tool_id}")
+            raise AgentEngineError("TOOL_NOT_FOUND", f"Tool not found: {tool_id}")
         if not tool.enabled:
-            raise BklEngineError("TOOL_DISABLED", f"Tool is disabled: {tool_id}")
+            raise AgentEngineError("TOOL_DISABLED", f"Tool is disabled: {tool_id}")
         return tool
 
     def list_tools(self) -> list[Tool]:

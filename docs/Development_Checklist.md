@@ -1,14 +1,14 @@
-# BKL Skill Engine Development Checklist
+# Agent Engine Development Checklist
 
 Status: active development checklist for v0.1.
 
 This checklist turns the technical spec and installation-form decision into implementation order. The rule is to keep one Core Engine and make CLI, API, SDK, and future Desktop reuse it.
 
-Target business-agent architecture: [BKL Business Agent Base Architecture](BKL_Business_Agent_Base_Architecture.md).
+Target business-agent architecture: [Agent Engine Business Agent Base Architecture](Business_Agent_Base_Architecture.md).
 
-Architecture hardening roadmap: [BKL Business Agent Base Roadmap](BKL_Business_Agent_Base_Roadmap.md).
+Architecture hardening roadmap: [Agent Engine Business Agent Base Roadmap](Business_Agent_Base_Roadmap.md).
 
-Memory, knowledge, and cache design: [BKL Memory, Knowledge, and Cache Design](BKL_Memory_Knowledge_Cache_Design.md).
+Memory, knowledge, and cache design: [Agent Engine Memory, Knowledge, and Cache Design](Memory_Knowledge_Cache_Design.md).
 
 ## 1. P0 Completed Baseline
 
@@ -17,21 +17,21 @@ Memory, knowledge, and cache design: [BKL Memory, Knowledge, and Cache Design](B
 - [x] Tool loader for `tool.yaml`
 - [x] Python Tool runner with JSON stdin/stdout
 - [x] Tool registry
-- [x] standard Skill loader: `SKILL.md + bkl.skill.json`
+- [x] standard Skill loader: `SKILL.md + agent.skill.json`
 - [x] Skill registry
 - [x] Skill runtime tool-calling loop
 - [x] Mock model provider
 - [x] OpenAI-compatible model provider
 - [x] Anthropic-compatible model provider
-- [x] model profiles from `bkl.yaml + .env`
+- [x] model profiles from `agent.yaml + .env`
 - [x] in-memory run store
 - [x] in-memory trace store
 - [x] local artifact store
 - [x] CLI basics: version, tool test, skill run
 - [x] FastAPI basics: register Tool, register Skill, run Skill, query run/trace/artifact
 - [x] OpenAPI Tool importer skeleton
-- [x] `bkl init`
-- [x] `bkl serve`
+- [x] `ae init`
+- [x] `ae serve`
 - [x] installation-form architecture document
 - [x] example Skill: `engine/resources/skills/talking-video`
 - [x] example Skill: `engine/resources/skills/wangbudong-experiment`
@@ -41,7 +41,7 @@ Memory, knowledge, and cache design: [BKL Memory, Knowledge, and Cache Design](B
 
 Goal: make Tool and Skill imports survive CLI/API/server restarts.
 
-- [x] add `.bkl/catalog.json` schema
+- [x] add `.agent/catalog.json` schema
 - [x] add `JsonCatalogStore`
 - [x] persist registered Tools with id, package path, enabled flag, and validation timestamp
 - [x] persist registered Skills with id, package path, enabled flag, and validation timestamp
@@ -53,8 +53,8 @@ Goal: make Tool and Skill imports survive CLI/API/server restarts.
 
 Acceptance:
 
-- [x] registering a Tool writes `.bkl/catalog.json`
-- [x] registering a Skill writes `.bkl/catalog.json`
+- [x] registering a Tool writes `.agent/catalog.json`
+- [x] registering a Skill writes `.agent/catalog.json`
 - [x] a fresh `SkillEngine.load(..., catalog_path=...)` loads registered packages
 - [x] CLI register commands can write to a specified catalog path
 - [x] full test suite, ruff, and mypy pass
@@ -63,7 +63,7 @@ Acceptance:
 
 Goal: support both direct Skill execution and Agent-orchestrated execution without duplicating runtime logic.
 
-Design reference: [BKL Agent Runtime Engineering Plan](BKL_Agent_Runtime_Engineering.md).
+Design reference: [Agent Engine Agent Runtime Engineering Plan](Agent_Runtime_Engineering.md).
 
 - [x] add Agent runtime packages under `domain/agent/` and `application/agent/`
 - [x] add Agent schemas: session, turn, route decision, action plan, action result
@@ -76,8 +76,8 @@ Design reference: [BKL Agent Runtime Engineering Plan](BKL_Agent_Runtime_Enginee
 - [x] add `AgentLoop` with bounded `max_agent_steps`
 - [x] add deterministic Action Registry skeleton: run Skill, list Skills, list Tools
 - [ ] expand Action Registry: import, validate, configure, explain trace
-- [x] add `bkl chat`
-- [x] add `bkl chat --once`
+- [x] add `ae chat`
+- [x] add `ae chat --once`
 - [ ] add safe management actions: configure model, import Tool, import Skill, validate, run, list catalog
 - [ ] use deterministic code paths for writes
 - [ ] require confirmation before file writes or destructive changes
@@ -98,7 +98,7 @@ Acceptance:
 
 Goal: make the codebase structurally ready for business agents, multi-agent orchestration, local software, cloud SaaS, and private deployments.
 
-Design reference: [BKL Business Agent Base Architecture](BKL_Business_Agent_Base_Architecture.md) and [BKL Business Agent Base Roadmap](BKL_Business_Agent_Base_Roadmap.md).
+Design reference: [Agent Engine Business Agent Base Architecture](Business_Agent_Base_Architecture.md) and [Agent Engine Business Agent Base Roadmap](Business_Agent_Base_Roadmap.md).
 
 - [x] create initial DDD package boundaries: `domain/`, `application/`, `infrastructure/`, `interfaces/`
 - [x] add first application ports for RunStore, TraceStore, ArtifactStore
@@ -132,7 +132,7 @@ Acceptance:
 
 ## 5. Server Deployment Iteration
 
-Goal: make `bkl serve` usable by other services beyond local testing.
+Goal: make `ae serve` usable by other services beyond local testing.
 
 - [ ] API key auth middleware
 - [ ] configurable workspace root
@@ -164,7 +164,7 @@ Goal: make a local user interface without creating a second engine.
 
 Acceptance:
 
-- [ ] GUI starts or connects to local `bkl serve`
+- [ ] GUI starts or connects to local `ae serve`
 - [ ] GUI manages model config through the same API
 - [ ] GUI registers Tools and Skills through the same API
 - [ ] GUI runs Skills and displays trace/artifacts
@@ -184,7 +184,7 @@ Goal: ship useful starter packs without hardcoding product-specific behavior int
 
 Acceptance:
 
-- [ ] built-in packs use the same `SKILL.md + bkl.skill.json` format
+- [ ] built-in packs use the same `SKILL.md + agent.skill.json` format
 - [ ] users can disable or remove built-in packs
 - [ ] built-in packs are documented as examples, not engine internals
 
@@ -192,10 +192,10 @@ Acceptance:
 
 Goal: add Hermes-style bounded memory, session search, Markdown knowledge indexing, and prompt-cache-friendly context injection.
 
-Design reference: [BKL Memory, Knowledge, and Cache Design](BKL_Memory_Knowledge_Cache_Design.md).
+Design reference: [Agent Engine Memory, Knowledge, and Cache Design](Memory_Knowledge_Cache_Design.md).
 
-- [x] add `.bkl/memory/{workspace_id}/{identity_id}/MEMORY.md`
-- [x] add `.bkl/memory/{workspace_id}/{identity_id}/USER.md`
+- [x] add `.agent/memory/{workspace_id}/{identity_id}/MEMORY.md`
+- [x] add `.agent/memory/{workspace_id}/{identity_id}/USER.md`
 - [x] add MemoryStorePort and local Markdown-backed implementation
 - [x] load memory as a frozen Skill run prompt snapshot
 - [ ] promote frozen memory snapshot to Agent session scope

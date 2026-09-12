@@ -13,7 +13,7 @@ from rich.console import Console
 from app import __version__
 from app.application.agent import HandleAgentMessageCommand, HandleAgentMessageUseCase
 from app.application.skill import RunSkillCommand, RunSkillUseCase
-from app.domain.errors import BklEngineError
+from app.domain.errors import AgentEngineError
 from app.domain.policy import PolicyEffect
 from app.domain.tool import ToolExecutionContext
 from app.engine import SkillEngine
@@ -21,7 +21,7 @@ from app.infrastructure.package_loaders.skill_loader import load_skill
 from app.infrastructure.package_loaders.tool_loader import load_tool
 from app.infrastructure.tool_runners.python_tool import PythonToolRunner
 
-app = typer.Typer(help="BKL Skill Engine command line interface.")
+app = typer.Typer(help="Agent Engine command line interface.")
 tool_app = typer.Typer(help="Tool commands.")
 skill_app = typer.Typer(help="Skill commands.")
 run_app = typer.Typer(help="Run commands.")
@@ -29,13 +29,13 @@ trace_app = typer.Typer(help="Trace commands.")
 workspace_app = typer.Typer(help="Workspace and identity resource commands.")
 console = Console()
 MODEL_PROTOCOLS = {"mock", "openai-compatible", "anthropic"}
-DEFAULT_CONFIG_PATH = Path("bkl.yaml")
-DEFAULT_CATALOG_PATH = Path(".bkl/catalog.json")
+DEFAULT_CONFIG_PATH = Path("agent.yaml")
+DEFAULT_CATALOG_PATH = Path(".agent/catalog.json")
 
 
 def version_callback(value: bool) -> None:
     if value:
-        console.print(f"bkl-skill-engine {__version__}")
+        console.print(f"agent-engine {__version__}")
         raise typer.Exit()
 
 
@@ -49,7 +49,7 @@ def main(
         help="Show version and exit.",
     ),
 ) -> None:
-    """Run BKL Skill Engine commands."""
+    """Run Agent Engine commands."""
 
 
 @app.command("init")
@@ -205,15 +205,15 @@ def chat(
                     )
                 )
             )
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             _print_error(exc, output)
             raise typer.Exit(1) from exc
         _print_agent_response(response.model_dump(mode="json"), output, view)
         return
 
-    console.print("bkl chat interactive mode. Type 'exit' to quit.")
+    console.print("ae chat interactive mode. Type 'exit' to quit.")
     while True:
-        message = typer.prompt("bkl")
+        message = typer.prompt("ae")
         if message.strip().lower() in {"exit", "quit"}:
             return
         try:
@@ -222,7 +222,7 @@ def chat(
                     HandleAgentMessageCommand(message=message, scene_id=scene, skill_id=skill)
                 )
             )
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             _print_error(exc, output)
             continue
         _print_agent_response(response.model_dump(mode="json"), output, view)
@@ -482,7 +482,7 @@ def _print_agent_response(data: dict[str, object], output: str, view: str) -> No
         console.print_json(data=data)
 
 
-def _print_error(exc: BklEngineError, output: str) -> None:
+def _print_error(exc: AgentEngineError, output: str) -> None:
     data = {
         "status": "failed",
         "error": {
@@ -517,7 +517,7 @@ def _ensure_workspace_identity(
             workspace_id,
             workspace_name or workspace_id,
         )
-    except BklEngineError as exc:
+    except AgentEngineError as exc:
         if exc.code != "WORKSPACE_ALREADY_EXISTS":
             raise
         workspace = engine.workspace_store.get_workspace(workspace_id)
@@ -528,7 +528,7 @@ def _ensure_workspace_identity(
             identity_id,
             identity_name or identity_id,
         )
-    except BklEngineError as exc:
+    except AgentEngineError as exc:
         if exc.code != "IDENTITY_ALREADY_EXISTS":
             raise
         identity = engine.workspace_store.get_identity(workspace_id, identity_id)
@@ -571,7 +571,7 @@ def _scan_workspace_resources(
     registered_skill_ids: list[str] = []
     installed_skill_ids: list[str] = []
     bound_skill_ids: list[str] = []
-    for skill_path in _iter_package_dirs(skills_dir, "bkl.skill.json"):
+    for skill_path in _iter_package_dirs(skills_dir, "agent.skill.json"):
         skill = asyncio.run(engine.register_skill(skill_path))
         registered_skill_ids.append(skill.id)
         engine.workspace_store.install_skill(

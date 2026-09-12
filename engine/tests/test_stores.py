@@ -39,7 +39,7 @@ def test_trace_store_records_run_events() -> None:
 
 
 def test_json_run_store_persists_runs(tmp_path: Path) -> None:
-    path = tmp_path / ".bkl" / "runs.json"
+    path = tmp_path / ".agent" / "runs.json"
     store = JsonRunStore(path)
 
     store.save(RunResult(run_id="run_1", status="succeeded", skill_id="talking-video"))
@@ -51,7 +51,7 @@ def test_json_run_store_persists_runs(tmp_path: Path) -> None:
 
 
 def test_json_trace_store_persists_events_and_redacts_secrets(tmp_path: Path) -> None:
-    path = tmp_path / ".bkl" / "traces.json"
+    path = tmp_path / ".agent" / "traces.json"
     store = JsonTraceStore(path)
 
     store.record(
@@ -72,7 +72,7 @@ def test_json_trace_store_persists_events_and_redacts_secrets(tmp_path: Path) ->
 def test_json_policy_store_persists_tool_rules_and_resolves_specificity(
     tmp_path: Path,
 ) -> None:
-    path = tmp_path / ".bkl" / "policies.json"
+    path = tmp_path / ".agent" / "policies.json"
     store = JsonPolicyStore(path)
 
     store.set_tool_rule(
@@ -104,7 +104,7 @@ def test_json_policy_store_persists_tool_rules_and_resolves_specificity(
 
 
 def test_json_policy_store_persists_tool_approvals(tmp_path: Path) -> None:
-    path = tmp_path / ".bkl" / "policies.json"
+    path = tmp_path / ".agent" / "policies.json"
     store = JsonPolicyStore(path)
 
     approval = store.create_tool_approval(
@@ -135,7 +135,7 @@ def test_json_policy_store_persists_tool_approvals(tmp_path: Path) -> None:
 
 
 def test_json_secret_store_persists_secrets_but_lists_only_metadata(tmp_path: Path) -> None:
-    path = tmp_path / ".bkl" / "secrets.json"
+    path = tmp_path / ".agent" / "secrets.json"
     store = JsonSecretStore(path)
 
     view = store.set_secret(
@@ -190,7 +190,7 @@ def test_trace_store_subscription_filters_by_workspace_and_identity() -> None:
 def test_json_workspace_store_persists_identities_and_skill_bindings(
     tmp_path: Path,
 ) -> None:
-    path = tmp_path / ".bkl" / "workspaces.json"
+    path = tmp_path / ".agent" / "workspaces.json"
     store = JsonWorkspaceStore(path)
 
     store.create_workspace("workspace_content_ops", "Content Ops")
@@ -214,7 +214,7 @@ def test_json_workspace_store_persists_identities_and_skill_bindings(
 def test_workspace_store_requires_skill_install_before_identity_binding(
     tmp_path: Path,
 ) -> None:
-    path = tmp_path / ".bkl" / "workspaces.json"
+    path = tmp_path / ".agent" / "workspaces.json"
     store = JsonWorkspaceStore(path)
 
     store.create_workspace("workspace_content_ops", "Content Ops")
@@ -229,7 +229,7 @@ def test_workspace_store_requires_skill_install_before_identity_binding(
 
 
 def test_json_session_store_persists_messages_and_turns(tmp_path: Path) -> None:
-    path = tmp_path / ".bkl" / "sessions.json"
+    path = tmp_path / ".agent" / "sessions.json"
     store = JsonAgentSessionStore(path)
 
     store.ensure_session(
@@ -252,7 +252,7 @@ def test_json_session_store_persists_messages_and_turns(tmp_path: Path) -> None:
 
 
 def test_local_markdown_memory_store_appends_and_reads_snapshot(tmp_path: Path) -> None:
-    root = tmp_path / ".bkl" / "memory"
+    root = tmp_path / ".agent" / "memory"
     store = LocalMarkdownMemoryStore(root)
 
     store.append_entry(

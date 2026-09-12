@@ -7,11 +7,11 @@ import httpx
 from jsonschema import ValidationError as JsonSchemaValidationError
 from jsonschema import validate
 
-from app.domain.errors import BklEngineError
+from app.domain.errors import AgentEngineError
 from app.domain.tool import Tool, ToolExecutionContext, ToolExecutionResult
 
 
-class ApiToolExecutionError(BklEngineError):
+class ApiToolExecutionError(AgentEngineError):
     """Raised when an API Tool cannot be executed."""
 
 

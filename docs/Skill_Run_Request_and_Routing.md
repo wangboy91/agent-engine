@@ -1,4 +1,4 @@
-# BKL Skill Run Request and Routing
+# Agent Engine Skill Run Request and Routing
 
 本文说明三件事：
 
@@ -12,7 +12,7 @@
 
 ```text
 SKILL.md
-bkl.skill.json
+agent.skill.json
 input.schema.json
 output.schema.json
 examples.json
@@ -24,7 +24,7 @@ examples.json
 SKILL.md
   给模型看的说明书：什么时候使用、如何执行、注意事项、输出要求。
 
-bkl.skill.json
+agent.skill.json
   给引擎看的运行配置：skill id、schema 文件、允许调用的 tools、模型 profile、limits。
 
 input.schema.json
@@ -39,7 +39,7 @@ examples.json
 
 ## 2. 当前 talking-video 示例
 
-`engine/resources/skills/talking-video/bkl.skill.json` 里声明：
+`engine/resources/skills/talking-video/agent.skill.json` 里声明：
 
 ```json
 {
@@ -128,7 +128,7 @@ talking-video
 CLI 当前是显式指定 Skill：
 
 ```bash
-bkl skill run talking-video engine/resources/inputs/talking-video-input.json \
+ae skill run talking-video engine/resources/inputs/talking-video-input.json \
   --skills-dir engine/resources/skills \
   --tools-dir engine/resources/tools \
   --output json
@@ -283,7 +283,7 @@ Skill：skill_creator
 
 ### 6.3 方式三：自然语言 Skill Router
 
-这是 `bkl chat` 未来要做的方式。
+这是 `ae chat` 未来要做的方式。
 
 用户说：
 
@@ -342,7 +342,7 @@ SKILL.md 摘要
 本地 GUI 工作台
   用户选择 Skill，或用自然语言 router 辅助推荐。
 
-bkl chat
+ae chat
   自然语言 router 选择 Skill，低置信度时要求确认。
 
 后台自动化流程

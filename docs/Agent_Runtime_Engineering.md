@@ -1,8 +1,8 @@
-# BKL Agent Runtime Engineering Plan
+# Agent Engine Agent Runtime Engineering Plan
 
 Status: first implementation slice landed on 2026-06-10; management actions and session persistence remain pending.
 
-本文定义 BKL 下一阶段如何工程化实现 Agent 能力。核心结论是：BKL 需要同时保留“显式指定 Skill 执行”和“自然语言/场景驱动 Agent 执行”两种能力，但它们必须复用同一个 `SkillEngine`，不能做两套运行时。
+本文定义 Agent Engine 下一阶段如何工程化实现 Agent 能力。核心结论是：Agent Engine 需要同时保留“显式指定 Skill 执行”和“自然语言/场景驱动 Agent 执行”两种能力，但它们必须复用同一个 `SkillEngine`，不能做两套运行时。
 
 当前已实现的第一版闭环：
 
@@ -16,7 +16,7 @@ engine/app/application/agent/
   ActionRegistry skeleton
   AgentLoop
 
-bkl chat --once
+ae chat --once
 POST /chat/messages
 ```
 
@@ -31,7 +31,7 @@ Agent turn trace 持久化
 
 ## 1. Two Execution Modes
 
-BKL 对外应该提供两条入口。
+Agent Engine 对外应该提供两条入口。
 
 ### 1.1 Direct Skill Execution
 
@@ -56,7 +56,7 @@ caller
 入口示例：
 
 ```bash
-bkl skill run talking-video input.json --output json
+ae skill run talking-video input.json --output json
 ```
 
 ```http
@@ -81,7 +81,7 @@ user message / scene_id
 
 适用场景：
 
-- `bkl chat`
+- `ae chat`
 - 本地 GUI 工作台
 - 用户不知道该选哪个 Skill
 - 用户通过自然语言导入 Tool / Skill
@@ -90,8 +90,8 @@ user message / scene_id
 入口示例：
 
 ```bash
-bkl chat
-bkl chat --once "帮我做一个王不懂小实验，主题是鸡蛋为什么会浮起来"
+ae chat
+ae chat --once "帮我做一个王不懂小实验，主题是鸡蛋为什么会浮起来"
 ```
 
 ```http
@@ -148,7 +148,7 @@ Agent 级 loop 需要解决：
 运行结果是否足够，还是需要继续下一步？
 ```
 
-因此 BKL Agent 是一个受控状态机，而不是自由行动的代码编辑 Agent。
+因此 Agent Engine Agent 是一个受控状态机，而不是自由行动的代码编辑 Agent。
 
 ## 4. Agent Loop
 
@@ -359,7 +359,7 @@ class RegisterSkillActionInput(BaseModel):
 
 ```text
 写入 catalog
-修改 bkl.yaml
+修改 agent.yaml
 导入 Tool / Skill
 执行外部发布类 Tool
 执行会产生费用的 API Tool
@@ -411,7 +411,7 @@ AgentTurn
 第一版本地存储：
 
 ```text
-.bkl/
+.agent/
   sessions/
     <session_id>.json
 ```
@@ -434,10 +434,10 @@ Agent turn trace
 ### 10.1 CLI
 
 ```bash
-bkl chat
-bkl chat --once "帮我做一个王不懂小实验，主题是鸡蛋为什么会浮起来"
-bkl chat --scene wangbudong_experiment_writer
-bkl chat --session sess_123
+ae chat
+ae chat --once "帮我做一个王不懂小实验，主题是鸡蛋为什么会浮起来"
+ae chat --scene wangbudong_experiment_writer
+ae chat --session sess_123
 ```
 
 CLI 行为：
@@ -488,7 +488,7 @@ POST /chat/messages
 ```json
 {
   "status": "requires_confirmation",
-  "message": "将导入 Skill engine/resources/skills/foo 并写入 .bkl/catalog.json，是否继续？",
+  "message": "将导入 Skill engine/resources/skills/foo 并写入 .agent/catalog.json，是否继续？",
   "requires_confirmation": true,
   "confirmation": {
     "action_id": "act_xxx",
@@ -584,7 +584,7 @@ engine/app/interfaces/http/routes_chat.py
 
 - 新增 `engine/app/domain/agent/schemas.py`
 - 新增 `SceneMapping`
-- 支持从 `bkl.yaml` 或独立 `scenes.yaml` 读取 `scene_id -> skill_id`
+- 支持从 `agent.yaml` 或独立 `scenes.yaml` 读取 `scene_id -> skill_id`
 - 测试 scene routing
 
 ### Phase 2: Skill Router
@@ -602,7 +602,7 @@ engine/app/interfaces/http/routes_chat.py
 - 支持 schema default 和 scene default
 - 最终通过 jsonschema 校验
 
-### Phase 4: AgentLoop and `bkl chat --once`
+### Phase 4: AgentLoop and `ae chat --once`
 
 - 串联 router、resolver、confirmation、action
 - 第一版只支持 `run_skill`、`list_skills`、`list_tools`
@@ -619,7 +619,7 @@ engine/app/interfaces/http/routes_chat.py
 ### Phase 6: Chat API and Session Persistence
 
 - 新增 `POST /chat/messages`
-- 新增本地 `.bkl/sessions/*.json`
+- 新增本地 `.agent/sessions/*.json`
 - Agent turn 关联 Skill run trace
 
 ## 13. Testing Strategy
@@ -660,7 +660,7 @@ AgentLoop 达到 max_agent_steps 会停止
 
 ## 15. Summary
 
-BKL 应该是：
+Agent Engine 应该是：
 
 ```text
 Direct mode:

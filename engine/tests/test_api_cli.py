@@ -53,7 +53,7 @@ def test_cli_skill_run_executes_default_mock_chain() -> None:
 
 
 def test_cli_skill_run_can_load_config_file(tmp_path: Path) -> None:
-    config_path = tmp_path / "bkl.yaml"
+    config_path = tmp_path / "agent.yaml"
     config_path.write_text(
         "\n".join(
             [
@@ -137,7 +137,7 @@ def test_fastapi_runtime_console_serves_static_ui(tmp_path: Path) -> None:
     script_response = client.get("/ui/assets/runtime-console.js")
 
     assert page_response.status_code == 200
-    assert "BKL 运行控制台" in page_response.text
+    assert "Agent Engine 运行控制台" in page_response.text
     assert "深度思考" in page_response.text
     assert script_response.status_code == 200
     assert "自动识别意图" in script_response.text

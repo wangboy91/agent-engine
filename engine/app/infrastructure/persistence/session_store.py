@@ -7,7 +7,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field, ValidationError
 
 from app.domain.agent import AgentMessage, AgentSession, AgentTurn
-from app.domain.errors import BklEngineError
+from app.domain.errors import AgentEngineError
 
 
 class SessionDocument(BaseModel):
@@ -22,7 +22,7 @@ class InMemoryAgentSessionStore:
     def get(self, session_id: str) -> AgentSession:
         session = self._sessions.get(session_id)
         if session is None:
-            raise BklEngineError("SESSION_NOT_FOUND", f"Session not found: {session_id}")
+            raise AgentEngineError("SESSION_NOT_FOUND", f"Session not found: {session_id}")
         return session
 
     def list_sessions(
@@ -128,12 +128,12 @@ class JsonAgentSessionStore(InMemoryAgentSessionStore):
             raw = json.loads(self.path.read_text(encoding="utf-8"))
             document = SessionDocument.model_validate(raw)
         except json.JSONDecodeError as exc:
-            raise BklEngineError(
+            raise AgentEngineError(
                 "SESSION_STORE_INVALID",
                 f"Invalid session store JSON: {self.path}",
             ) from exc
         except ValidationError as exc:
-            raise BklEngineError(
+            raise AgentEngineError(
                 "SESSION_STORE_INVALID",
                 f"Invalid session store shape: {self.path}",
             ) from exc

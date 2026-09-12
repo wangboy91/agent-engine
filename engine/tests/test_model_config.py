@@ -13,7 +13,7 @@ def test_loads_multiple_model_profiles_with_active_profile(
 ) -> None:  # type: ignore[no-untyped-def]
     monkeypatch.setenv("OPENAI_COMPATIBLE_BASE_URL", "https://example.com/v2")
     monkeypatch.setenv("ASTRON_MODEL", "astron-code-latest")
-    config_path = tmp_path / "bkl.yaml"
+    config_path = tmp_path / "agent.yaml"
     config_path.write_text(
         "\n".join(
             [
@@ -61,7 +61,7 @@ def test_load_engine_config_reads_local_dotenv(
         ),
         encoding="utf-8",
     )
-    config_path = tmp_path / "bkl.yaml"
+    config_path = tmp_path / "agent.yaml"
     config_path.write_text(
         "\n".join(
             [
@@ -89,7 +89,7 @@ def test_skill_engine_load_uses_active_configured_model_profile(
     monkeypatch,
 ) -> None:  # type: ignore[no-untyped-def]
     monkeypatch.setenv("OPENAI_COMPATIBLE_BASE_URL", "https://example.com/v2")
-    config_path = tmp_path / "bkl.yaml"
+    config_path = tmp_path / "agent.yaml"
     config_path.write_text(
         "\n".join(
             [

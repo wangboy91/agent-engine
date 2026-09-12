@@ -1,6 +1,6 @@
 @startuml
 !pragma layout smetana
-title BKL Core Class Relations
+title Agent Engine Core Class Relations
 
 skinparam shadowing false
 left to right direction

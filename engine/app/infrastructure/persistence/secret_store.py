@@ -6,7 +6,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field, ValidationError
 
-from app.domain.errors import BklEngineError
+from app.domain.errors import AgentEngineError
 from app.domain.secret import SecretRecord, SecretView
 
 
@@ -46,7 +46,7 @@ class InMemorySecretStore:
         if secret is None and workspace_id is not None:
             secret = self._secrets.get(_secret_id(name, None))
         if secret is None:
-            raise BklEngineError(
+            raise AgentEngineError(
                 "SECRET_NOT_FOUND",
                 f"Secret not found: {name}",
                 {"workspace_id": workspace_id},
@@ -87,12 +87,12 @@ class JsonSecretStore(InMemorySecretStore):
             raw = json.loads(self.path.read_text(encoding="utf-8"))
             document = SecretDocument.model_validate(raw)
         except json.JSONDecodeError as exc:
-            raise BklEngineError(
+            raise AgentEngineError(
                 "SECRET_STORE_INVALID",
                 f"Invalid secret store JSON: {self.path}",
             ) from exc
         except ValidationError as exc:
-            raise BklEngineError(
+            raise AgentEngineError(
                 "SECRET_STORE_INVALID",
                 f"Invalid secret store shape: {self.path}",
             ) from exc

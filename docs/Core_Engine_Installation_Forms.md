@@ -1,10 +1,10 @@
-# BKL Core Engine Installation Forms
+# Agent Engine Core Engine Installation Forms
 
 Status: accepted for v0.1 architecture, implementation still in progress.
 
 ## 1. Conclusion
 
-BKL uses one Core Engine and exposes multiple installation forms.
+Agent Engine uses one Core Engine and exposes multiple installation forms.
 
 Do not build separate engines for CLI, server, desktop, or SaaS products. All entrypoints must call the same `SkillEngine` facade and share the same Skill, Tool, model config, run result, trace, and artifact contracts.
 
@@ -13,8 +13,8 @@ CLI ─┐
 API ─┼── SkillEngine ─── Registry / Runtime / Model Router / Tool Executor / Store
 SDK ─┘
 
-Desktop GUI ─── local HTTP ─── bkl serve ─── SkillEngine
-External service ─ HTTP ────── bkl serve ─── SkillEngine
+Desktop GUI ─── local HTTP ─── ae serve ─── SkillEngine
+External service ─ HTTP ────── ae serve ─── SkillEngine
 ```
 
 This keeps learning cost low and avoids version drift between local tools, server deployment, and future GUI products.
@@ -34,11 +34,11 @@ Target users:
 Entrypoints:
 
 ```bash
-bkl init
-bkl tool register ./tools/foo
-bkl skill register ./skills/bar
-bkl skill run bar input.json --output json
-bkl chat
+ae init
+ae tool register ./tools/foo
+ae skill register ./skills/bar
+ae skill run bar input.json --output json
+ae chat
 ```
 
 The CLI should be able to express the same core actions as the HTTP API.
@@ -55,7 +55,7 @@ Target users:
 Entrypoint:
 
 ```bash
-bkl serve --host 0.0.0.0 --port 8000 --config bkl.yaml
+ae serve --host 0.0.0.0 --port 8000 --config agent.yaml
 ```
 
 Core endpoints:
@@ -81,13 +81,13 @@ Target users:
 - content operators
 - local-first product workflows
 
-The desktop app should not embed a separate engine implementation. It should start or connect to local `bkl serve` and call the same HTTP API as any other client.
+The desktop app should not embed a separate engine implementation. It should start or connect to local `ae serve` and call the same HTTP API as any other client.
 
 Recommended shape:
 
 ```text
 Desktop shell
-  starts local bkl serve
+  starts local ae serve
   opens local Web UI
   calls http://127.0.0.1:<port>
 ```
@@ -105,7 +105,7 @@ The GUI manages model config, Tool catalog, Skill catalog, run history, traces, 
 Current repository is a single Python package. The logical boundaries should already be respected so future packaging can split without rewriting behavior.
 
 ```text
-bkl-core
+agent-engine-core
   core schemas and errors
   config loading
   Skill loader and registry
@@ -116,21 +116,21 @@ bkl-core
   Artifact store
   Catalog store
 
-bkl-cli
+agent-engine-cli
   Typer commands
-  bkl init
-  bkl chat
-  bkl serve launcher
+  ae init
+  ae chat
+  ae serve launcher
   CLI output formatting
 
-bkl-server
+agent-engine-server
   FastAPI app
   API models
   auth middleware
   deployment settings
   worker integration
 
-bkl-desktop
+agent-engine-desktop
   local UI
   local server lifecycle
   OS-specific packaging
@@ -148,13 +148,13 @@ Only one Skill package format is supported:
 
 ```text
 SKILL.md
-bkl.skill.json
+agent.skill.json
 input.schema.json
 output.schema.json
 examples.json
 ```
 
-`SKILL.md` contains standard Skill metadata and Markdown instructions. BKL runtime config belongs in `bkl.skill.json`.
+`SKILL.md` contains standard Skill metadata and Markdown instructions. Agent Engine runtime config belongs in `agent.skill.json`.
 
 ### Tool Package
 
@@ -172,11 +172,11 @@ main.py
 Only one model config shape is supported:
 
 ```text
-bkl.yaml
+agent.yaml
 .env
 ```
 
-`bkl.yaml` stores provider profile configuration and environment variable names. Real secrets are stored in `.env` or a future credential store.
+`agent.yaml` stores provider profile configuration and environment variable names. Real secrets are stored in `.env` or a future credential store.
 
 ### RunResult
 
@@ -199,12 +199,12 @@ CLI can render this as table or JSON, but the JSON mode must match the API/SDK s
 
 ## 5. State and Persistence
 
-Current v0.1 implementation uses `.bkl/catalog.json` for registered Tool and Skill packages, in-memory run/trace stores, and local artifacts. The catalog is the first persistent state layer required by CLI, Server, and future Desktop.
+Current v0.1 implementation uses `.agent/catalog.json` for registered Tool and Skill packages, in-memory run/trace stores, and local artifacts. The catalog is the first persistent state layer required by CLI, Server, and future Desktop.
 
 The persistent local state layout should be:
 
 ```text
-.bkl/
+.agent/
   catalog.json
   runs/
   traces/
@@ -238,7 +238,7 @@ Server deployments can later replace catalog JSON with PostgreSQL and object sto
 
 ## 6. Natural Language Control
 
-`bkl chat` should be an orchestration layer over safe management tools, not a free-form file-editing agent.
+`ae chat` should be an orchestration layer over safe management tools, not a free-form file-editing agent.
 
 Allowed management actions:
 
@@ -261,9 +261,9 @@ The chat layer can use model reasoning to select actions, but actual writes must
 
 Secrets:
 
-- never write real API keys into `bkl.yaml`
+- never write real API keys into `agent.yaml`
 - never write secrets into `SKILL.md`, `tool.yaml`, prompts, traces, or artifacts
-- `bkl init` may write API keys to `.env`
+- `ae init` may write API keys to `.env`
 - server deployments should move secrets to environment variables or credential stores
 
 Server:
@@ -284,18 +284,18 @@ Desktop:
 
 Status: implemented.
 
-- `bkl init`
-- `bkl serve`
+- `ae init`
+- `ae serve`
 - README and tech spec installation-form docs
 
 ### Iteration 2: Persistent Catalog
 
 Status: implemented for Tool and Skill package registration.
 
-- `.bkl/catalog.json`
+- `.agent/catalog.json`
 - catalog-backed CLI register
 - catalog-backed CLI list when catalog exists
-- `bkl serve` loads catalog on startup
+- `ae serve` loads catalog on startup
 
 Remaining follow-up:
 
@@ -306,7 +306,7 @@ Remaining follow-up:
 
 ### Iteration 3: Natural Language Chat
 
-- `bkl chat`
+- `ae chat`
 - management tools for Tool/Skill import and validation
 - chat session trace
 - safe confirmation before writes

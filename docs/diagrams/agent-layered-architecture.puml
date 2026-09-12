@@ -1,6 +1,6 @@
 @startuml
 !pragma layout smetana
-title BKL Layered Architecture
+title Agent Engine Layered Architecture
 
 skinparam packageStyle rectangle
 skinparam shadowing false

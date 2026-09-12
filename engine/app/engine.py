@@ -96,7 +96,7 @@ class SkillEngine:
         policy_path: str | Path | None = None,
         secret_path: str | Path | None = None,
     ) -> "SkillEngine":
-        config = load_engine_config(config_path or "bkl.yaml")
+        config = load_engine_config(config_path or "agent.yaml")
         catalog_store = JsonCatalogStore(catalog_path) if catalog_path is not None else None
         state_dir = _state_dir(catalog_path)
         policy_store = JsonPolicyStore(policy_path or state_dir / "policies.json")
@@ -140,7 +140,7 @@ class SkillEngine:
             run_store=InMemoryRunStore(),
             session_store=InMemoryAgentSessionStore(),
             memory_store=LocalMarkdownMemoryStore(
-                memory_root or resolved_artifact_root / ".bkl" / "memory"
+                memory_root or resolved_artifact_root / ".agent" / "memory"
             ),
             workspace_store=InMemoryWorkspaceStore(),
             policy_store=policy_store,
@@ -196,4 +196,4 @@ def _default_tool_executor(
 def _state_dir(catalog_path: str | Path | None) -> Path:
     if catalog_path is not None:
         return Path(catalog_path).parent
-    return Path(".bkl")
+    return Path(".agent")

@@ -24,7 +24,7 @@ from app.application.ports import (
     ToolRegistryPort,
     TraceStorePort,
 )
-from app.domain.errors import BklEngineError
+from app.domain.errors import AgentEngineError
 from app.domain.execution import (
     EngineError,
     RunContext,
@@ -36,7 +36,7 @@ from app.domain.skill import Skill, SkillWorkflowStep
 from app.domain.tool import Tool, ToolExecutionContext
 
 
-class SkillRuntimeError(BklEngineError):
+class SkillRuntimeError(AgentEngineError):
     """Raised when a Skill run fails."""
 
 
@@ -102,7 +102,7 @@ class SkillRuntime:
                 result = await self._run_loop(run_id, skill, input_data, allowed_tools, context)
             self.run_store.save(result)
             return result
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             if exc.code == "TOOL_REQUIRES_CONFIRMATION":
                 waiting = run.model_copy(
                     update={
@@ -183,7 +183,7 @@ class SkillRuntime:
                 result = await self._run_loop(run_id, skill, run.input, allowed_tools, run.context)
             self.run_store.save(result)
             return result
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             if exc.code == "TOOL_REQUIRES_CONFIRMATION":
                 waiting = run.model_copy(
                     update={
@@ -232,7 +232,7 @@ class SkillRuntime:
                     dict(workflow_context),
                     self._child_context(context, run_id, step.id),
                 )
-            except BklEngineError as exc:
+            except AgentEngineError as exc:
                 details: dict[str, object] = {
                     "step_id": step.id,
                     "skill_id": step.skill_id,
@@ -389,7 +389,7 @@ class SkillRuntime:
             )
 
             for step, child_result in zip(wave, child_results, strict=True):
-                if isinstance(child_result, BklEngineError):
+                if isinstance(child_result, AgentEngineError):
                     self._record_workflow_step_failure(run_id, step, child_result)
                     raise SkillRuntimeError(
                         "WORKFLOW_STEP_FAILED",
@@ -506,7 +506,7 @@ class SkillRuntime:
         self,
         run_id: str,
         step: SkillWorkflowStep,
-        exc: BklEngineError,
+        exc: AgentEngineError,
     ) -> None:
         self.trace_store.record(
             run_id,
@@ -680,7 +680,7 @@ class SkillRuntime:
                         tool_context,
                         policy_decision=policy_decision,
                     )
-                except BklEngineError as exc:
+                except AgentEngineError as exc:
                     self.trace_store.record(
                         run_id,
                         "tool_failed",
@@ -760,7 +760,7 @@ class SkillRuntime:
                 tool_context,
                 policy_decision=policy_decision,
             )
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             self.trace_store.record(
                 run_id,
                 "tool_failed",
@@ -826,7 +826,7 @@ class SkillRuntime:
                     tools,
                     stream_callback=stream_callback,
                 )
-            except BklEngineError as exc:
+            except AgentEngineError as exc:
                 self.trace_store.record(
                     run_id,
                     "llm_failed",

@@ -9,7 +9,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field, ValidationError
 
-from app.domain.errors import BklEngineError
+from app.domain.errors import AgentEngineError
 from app.domain.execution import TraceEvent
 
 
@@ -130,12 +130,12 @@ class JsonTraceStore(InMemoryTraceStore):
             raw = json.loads(self.path.read_text(encoding="utf-8"))
             document = TraceDocument.model_validate(raw)
         except json.JSONDecodeError as exc:
-            raise BklEngineError(
+            raise AgentEngineError(
                 "TRACE_STORE_INVALID",
                 f"Invalid trace store JSON: {self.path}",
             ) from exc
         except ValidationError as exc:
-            raise BklEngineError(
+            raise AgentEngineError(
                 "TRACE_STORE_INVALID",
                 f"Invalid trace store shape: {self.path}",
             ) from exc

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field, ValidationError
 
-from app.domain.errors import BklEngineError
+from app.domain.errors import AgentEngineError
 from app.domain.workspace import Identity, Workspace, WorkspaceSkill
 
 
@@ -30,7 +30,7 @@ class InMemoryWorkspaceStore:
         description: str | None = None,
     ) -> Workspace:
         if workspace_id in self._workspaces:
-            raise BklEngineError(
+            raise AgentEngineError(
                 "WORKSPACE_ALREADY_EXISTS",
                 f"Workspace already exists: {workspace_id}",
             )
@@ -45,7 +45,7 @@ class InMemoryWorkspaceStore:
     def get_workspace(self, workspace_id: str) -> Workspace:
         workspace = self._workspaces.get(workspace_id)
         if workspace is None:
-            raise BklEngineError("WORKSPACE_NOT_FOUND", f"Workspace not found: {workspace_id}")
+            raise AgentEngineError("WORKSPACE_NOT_FOUND", f"Workspace not found: {workspace_id}")
         return workspace
 
     def list_workspaces(self) -> list[Workspace]:
@@ -90,7 +90,7 @@ class InMemoryWorkspaceStore:
         self.get_workspace(workspace_id)
         workspace_skill = self._workspace_skills.get((workspace_id, skill_id))
         if workspace_skill is None:
-            raise BklEngineError(
+            raise AgentEngineError(
                 "WORKSPACE_SKILL_NOT_INSTALLED",
                 f"Skill is not installed in workspace: {skill_id}",
                 {"workspace_id": workspace_id, "skill_id": skill_id},
@@ -135,7 +135,7 @@ class InMemoryWorkspaceStore:
         self.get_workspace(workspace_id)
         key = (workspace_id, identity_id)
         if key in self._identities:
-            raise BklEngineError(
+            raise AgentEngineError(
                 "IDENTITY_ALREADY_EXISTS",
                 f"Identity already exists: {identity_id}",
                 {"workspace_id": workspace_id, "identity_id": identity_id},
@@ -152,7 +152,7 @@ class InMemoryWorkspaceStore:
     def get_identity(self, workspace_id: str, identity_id: str) -> Identity:
         identity = self._identities.get((workspace_id, identity_id))
         if identity is None:
-            raise BklEngineError(
+            raise AgentEngineError(
                 "IDENTITY_NOT_FOUND",
                 f"Identity not found: {identity_id}",
                 {"workspace_id": workspace_id, "identity_id": identity_id},
@@ -253,12 +253,12 @@ class JsonWorkspaceStore(InMemoryWorkspaceStore):
             raw = json.loads(self.path.read_text(encoding="utf-8"))
             document = WorkspaceDocument.model_validate(raw)
         except json.JSONDecodeError as exc:
-            raise BklEngineError(
+            raise AgentEngineError(
                 "WORKSPACE_STORE_INVALID",
                 f"Invalid workspace store JSON: {self.path}",
             ) from exc
         except ValidationError as exc:
-            raise BklEngineError(
+            raise AgentEngineError(
                 "WORKSPACE_STORE_INVALID",
                 f"Invalid workspace store shape: {self.path}",
             ) from exc

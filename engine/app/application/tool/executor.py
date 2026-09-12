@@ -4,7 +4,7 @@ from typing import Protocol
 
 from app.application.policy import PolicyEngine, ToolExecutionPolicy
 from app.application.ports import ToolRunnerPort
-from app.domain.errors import BklEngineError
+from app.domain.errors import AgentEngineError
 from app.domain.policy import PolicyDecision
 from app.domain.secret import SecretRecord
 from app.domain.tool import Tool, ToolExecutionContext, ToolExecutionResult
@@ -50,18 +50,18 @@ class ToolExecutor:
             return await self.python_runner.execute(tool, resolved_arguments, context)
         if tool.type == "api":
             return await self.api_runner.execute(tool, resolved_arguments, context)
-        raise BklEngineError("TOOL_TYPE_UNSUPPORTED", f"Unsupported tool type: {tool.type}")
+        raise AgentEngineError("TOOL_TYPE_UNSUPPORTED", f"Unsupported tool type: {tool.type}")
 
     def _ensure_policy_allows(self, tool: Tool, decision: PolicyDecision) -> None:
         if decision.effect == "allow":
             return
         if decision.effect == "ask":
-            raise BklEngineError(
+            raise AgentEngineError(
                 "TOOL_REQUIRES_CONFIRMATION",
                 f"Tool requires confirmation: {tool.id}",
                 {"reason": decision.reason, "risk": decision.risk, **decision.details},
             )
-        raise BklEngineError(
+        raise AgentEngineError(
             "TOOL_POLICY_DENIED",
             f"Tool execution denied: {tool.id}",
             {"reason": decision.reason, "risk": decision.risk, **decision.details},
@@ -75,7 +75,7 @@ class ToolExecutor:
     ) -> dict[str, object]:
         resolved = self._resolve_secret_value(tool, value, context)
         if not isinstance(resolved, dict):
-            raise BklEngineError("SECRET_REF_INVALID", "Tool arguments must resolve to an object")
+            raise AgentEngineError("SECRET_REF_INVALID", "Tool arguments must resolve to an object")
         return resolved
 
     def _resolve_secret_value(
@@ -103,9 +103,9 @@ class ToolExecutor:
         context: ToolExecutionContext,
     ) -> str:
         if self.secret_store is None:
-            raise BklEngineError("SECRET_STORE_NOT_CONFIGURED", "Secret store is not configured")
+            raise AgentEngineError("SECRET_STORE_NOT_CONFIGURED", "Secret store is not configured")
         if name not in tool.permissions.secrets:
-            raise BklEngineError(
+            raise AgentEngineError(
                 "SECRET_NOT_ALLOWED",
                 f"Tool is not allowed to access secret: {name}",
                 {"tool_id": tool.id, "secret": name},

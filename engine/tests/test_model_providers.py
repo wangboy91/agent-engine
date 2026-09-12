@@ -4,7 +4,7 @@ import json
 import httpx
 import pytest
 
-from app.domain.errors import BklEngineError
+from app.domain.errors import AgentEngineError
 from app.infrastructure.config.engine_config import ModelProfileConfig
 from app.infrastructure.model_gateway.providers.anthropic import AnthropicProvider
 from app.infrastructure.model_gateway.providers.openai_compatible import (
@@ -191,7 +191,7 @@ def test_openai_compatible_provider_wraps_network_errors(monkeypatch) -> None:  
         client=httpx.AsyncClient(transport=httpx.MockTransport(handler)),
     )
 
-    with pytest.raises(BklEngineError) as exc_info:
+    with pytest.raises(AgentEngineError) as exc_info:
         asyncio.run(provider.chat("active", [{"role": "user", "content": "ping"}], []))
 
     assert exc_info.value.code == "MODEL_PROVIDER_ERROR"

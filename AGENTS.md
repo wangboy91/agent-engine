@@ -2,7 +2,7 @@
 
 ## 项目概览
 
-本仓库是 `bkl-skill-engine`,一个面向 BKL AI 产品的 Python Skill 运行时。
+本仓库是 `agent-engine`,一个面向 Agent Engine AI 产品的 Python Skill 运行时。
 它加载本地 Skill 包、执行 Tool 包、路由模型调用、记录 run/trace/artifact,
 并通过 SDK、CLI、FastAPI 暴露同一套核心引擎。
 
@@ -12,8 +12,8 @@
 
 根目录按"代码 / 原型 / 文档 / 规范文档"四类组织:
 
-- `engine/`:后端内核,自成项目根(`pyproject.toml`、`uv.lock`、`bkl.yaml`、
-  `.env`、`.venv`、`.bkl/`、`data/` 都在这里)。**所有构建、运行、测试命令
+- `engine/`:后端内核,自成项目根(`pyproject.toml`、`uv.lock`、`agent.yaml`、
+  `.env`、`.venv`、`.agent/`、`data/` 都在这里)。**所有构建、运行、测试命令
   一律先 `cd engine` 再执行。**
   - `engine/app/`:核心包,按 DDD 分层 —— `domain/`(领域 schema)、
     `application/`(编排,含 `ports.py`)、`infrastructure/`(加载器、runner、
@@ -35,7 +35,7 @@
 Skill 包包含:
 
 - `SKILL.md`:YAML frontmatter(`name` 和 `description`),后接指令正文。
-- `bkl.skill.json`:BKL 运行时配置、模型 profile、schema 路径、允许的 tools。
+- `agent.skill.json`:Agent Engine 运行时配置、模型 profile、schema 路径、允许的 tools。
 - `schemas/input.schema.json` 与 `schemas/output.schema.json`:JSON Schema 契约。
 - `examples/examples.json`:用于文档与测试的示例。
 
@@ -44,9 +44,9 @@ Tool 包包含:
 - `tool.yaml`:工具 id/type/entry/schema/运行时配置。
 - `input.schema.json` 与 `output.schema.json`:JSON Schema 契约。
 - Python 工具的 `main.py`。Python 工具通过 JSON stdin/stdout 通信,
-  并通过 `BKL_RUN_ID`、`BKL_TOOL_CALL_ID`、`BKL_ARTIFACT_DIR` 接收 artifact 上下文。
+  并通过 `Agent Engine_RUN_ID`、`Agent Engine_TOOL_CALL_ID`、`Agent Engine_ARTIFACT_DIR` 接收 artifact 上下文。
 
-Skill 运行时配置不要写进 `SKILL.md`,应放在 `bkl.skill.json`。
+Skill 运行时配置不要写进 `SKILL.md`,应放在 `agent.skill.json`。
 
 ## 开发命令
 
@@ -63,10 +63,10 @@ uv --cache-dir .uv-cache run --extra dev mypy app
 
 ```bash
 cd engine
-uv --cache-dir .uv-cache run --extra dev bkl --version
-uv --cache-dir .uv-cache run --extra dev bkl tool test resources/tools/subtitle_generate_srt resources/inputs/subtitle_input.json --output json
-uv --cache-dir .uv-cache run --extra dev bkl skill run talking-video resources/inputs/talking-video-input.json --skills-dir resources/skills --tools-dir resources/tools --output json
-uv --cache-dir .uv-cache run --extra dev bkl chat --once "generate a 60 second talking video about eye-friendly desk lamps for programmers" --skills-dir resources/skills --tools-dir resources/tools --output json
+uv --cache-dir .uv-cache run --extra dev ae --version
+uv --cache-dir .uv-cache run --extra dev ae tool test resources/tools/subtitle_generate_srt resources/inputs/subtitle_input.json --output json
+uv --cache-dir .uv-cache run --extra dev ae skill run talking-video resources/inputs/talking-video-input.json --skills-dir resources/skills --tools-dir resources/tools --output json
+uv --cache-dir .uv-cache run --extra dev ae chat --once "generate a 60 second talking video about eye-friendly desk lamps for programmers" --skills-dir resources/skills --tools-dir resources/tools --output json
 ```
 
 项目在 `engine/pyproject.toml` 中声明 `requires-python = ">=3.12"`。
@@ -83,7 +83,7 @@ uv --cache-dir .uv-cache run --extra dev bkl chat --once "generate a 60 second t
 
 - 不要提交真实密钥。`engine/.env` 已被忽略,可能包含本地凭证。
 - 生成的 artifact 归属 `engine/data/` 目录,该目录已被忽略。
-- `engine/.bkl/catalog.json` 可能由注册类命令创建;做隔离测试时请使用 `--catalog`。
+- `engine/.agent/catalog.json` 可能由注册类命令创建;做隔离测试时请使用 `--catalog`。
 - 变更范围保持在当前子系统内,并遵循现有的 Pydantic/Typer/FastAPI 风格。
 - 修改运行时行为、schema、模型 provider 请求映射、CLI/API 行为或 Skill/Tool
   加载逻辑时,新增或更新对应测试。

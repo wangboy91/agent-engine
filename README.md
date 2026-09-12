@@ -1,6 +1,6 @@
-# BKL Skill Engine
+# Agent Engine
 
-> 面向 BKL AI 产品的 Python Skill 运行时基座。它把 **Skill 包、Tool 包、模型调用、工作流、Agent 路由、运行记录和 HTTP/CLI 接口** 收敛到一套可复用的运行内核中。
+> 面向 Agent Engine AI 产品的 Python Skill 运行时基座。它把 **Skill 包、Tool 包、模型调用、工作流、Agent 路由、运行记录和 HTTP/CLI 接口** 收敛到一套可复用的运行内核中。
 
 当前版本：`0.1.0`（工程验证版）。适合本地开发、原型验证和受控环境的单实例服务；距离多租户生产上线仍需完成本文“生产化门槛”中的工作。
 
@@ -22,7 +22,7 @@
 
 ## 项目定位
 
-BKL 的目标不是另一个聊天 UI，而是业务智能体的执行基座：把可版本化的业务能力打包成 Skill，把外部能力封装成 Tool，并对每一次执行提供输入/输出校验、可观察性、产物管理与权限控制。
+Agent Engine 的目标不是另一个聊天 UI，而是业务智能体的执行基座：把可版本化的业务能力打包成 Skill，把外部能力封装成 Tool，并对每一次执行提供输入/输出校验、可观察性、产物管理与权限控制。
 
 它适用于内容生产、营销运营、内部流程助手、垂类工作流等场景。上层产品可以通过 SDK、CLI 或 FastAPI 使用同一个 `SkillEngine`；不需要为每种入口重复实现模型、工具、运行记录等基础能力。
 
@@ -99,10 +99,10 @@ uv --cache-dir .uv-cache sync --extra dev
 ```bash
 cd engine
 uv tool install --force --upgrade .
-bkl --version
+ae --version
 ```
 
-若终端找不到 `bkl`，执行 `uv tool update-shell` 后重开终端。
+若终端找不到 `ae`，执行 `uv tool update-shell` 后重开终端。
 
 ### 不配置密钥的本地验证
 
@@ -111,13 +111,13 @@ bkl --version
 ```bash
 cd engine
 # 验证 Python Tool 的 stdin/stdout 与 Schema 合约
-uv --cache-dir .uv-cache run --extra dev bkl tool test \
+uv --cache-dir .uv-cache run --extra dev ae tool test \
   resources/tools/subtitle_generate_srt \
   resources/inputs/subtitle_input.json \
   --output json
 
 # 运行带 Tool 的 Skill
-uv --cache-dir .uv-cache run --extra dev bkl skill run \
+uv --cache-dir .uv-cache run --extra dev ae skill run \
   talking-video \
   resources/inputs/talking-video-input.json \
   --skills-dir resources/skills \
@@ -125,7 +125,7 @@ uv --cache-dir .uv-cache run --extra dev bkl skill run \
   --output json
 
 # 运行内容视频 DAG 工作流
-uv --cache-dir .uv-cache run --extra dev bkl skill run \
+uv --cache-dir .uv-cache run --extra dev ae skill run \
   content-video-workflow \
   resources/inputs/content-video-workflow-input.json \
   --skills-dir resources/skills \
@@ -141,27 +141,27 @@ Mock 输出中的 `Mock script for ...` 仅说明运行链路正常，不应当�
 
 ```bash
 cd engine
-uv --cache-dir .uv-cache run --extra dev bkl tool register resources/tools/subtitle_generate_srt
-uv --cache-dir .uv-cache run --extra dev bkl skill register resources/skills/talking-video
+uv --cache-dir .uv-cache run --extra dev ae tool register resources/tools/subtitle_generate_srt
+uv --cache-dir .uv-cache run --extra dev ae skill register resources/skills/talking-video
 ```
 
 再启动服务：
 
 ```bash
 cd engine
-uv --cache-dir .uv-cache run --extra dev bkl serve \
-  --host 127.0.0.1 --port 8000 --config bkl.yaml
+uv --cache-dir .uv-cache run --extra dev ae serve \
+  --host 127.0.0.1 --port 8000 --config agent.yaml
 ```
 
 可访问 `http://127.0.0.1:8000/health` 检查健康状态，或访问 `http://127.0.0.1:8000/ui` 使用内置运行控制台。`gateway` 与 `serve` 当前都启动同一 FastAPI 应用；前者只是为网关部署场景保留的 CLI 别名。
 
 ## 配置真实模型
 
-`bkl.yaml` 支持多个模型 profile，只保存环境变量名，不保存真实密钥。可用向导初始化：
+`agent.yaml` 支持多个模型 profile，只保存环境变量名，不保存真实密钥。可用向导初始化：
 
 ```bash
 cd engine
-uv --cache-dir .uv-cache run --extra dev bkl init \
+uv --cache-dir .uv-cache run --extra dev ae init \
   --protocol openai-compatible \
   --profile production \
   --base-url https://example.com/v1 \
@@ -169,7 +169,7 @@ uv --cache-dir .uv-cache run --extra dev bkl init \
   --api-key "仅写入本地 .env 的密钥"
 ```
 
-也可基于 `bkl.example.yaml` 编写：
+也可基于 `agent.example.yaml` 编写：
 
 ```yaml
 models:
@@ -198,7 +198,7 @@ OPENAI_MODEL=your-model
 - `openai-compatible`：请求 `{base_url}/chat/completions`；
 - `anthropic`：请求 `{base_url}/v1/messages`。
 
-为真实环境创建独立配置文件和 `.env`，例如 `bkl.production.yaml` 与 `.env.production`；不要提交真实密钥。
+为真实环境创建独立配置文件和 `.env`，例如 `agent.production.yaml` 与 `.env.production`；不要提交真实密钥。
 
 ## Skill 与 Tool 包规范
 
@@ -207,14 +207,14 @@ OPENAI_MODEL=your-model
 ```text
 my-skill/
 ├── SKILL.md                    # 标准说明、frontmatter 仅含 name/description
-├── bkl.skill.json              # BKL 运行时配置
+├── agent.skill.json              # Agent Engine 运行时配置
 ├── schemas/
 │   ├── input.schema.json
 │   └── output.schema.json
 └── examples/examples.json      # 推荐提供
 ```
 
-`SKILL.md` 的运行说明面向模型；模型、工具白名单、限额和工作流配置放在 `bkl.skill.json`，不要混写：
+`SKILL.md` 的运行说明面向模型；模型、工具白名单、限额和工作流配置放在 `agent.skill.json`，不要混写：
 
 ```md
 ---
@@ -258,11 +258,11 @@ my-tool/
 
 Python Tool 的约定：从标准输入读取一个 JSON 对象，只向标准输出写一个 JSON 对象；诊断信息写标准错误。运行时会在调用前后分别校验 input/output schema，并传入：
 
-- `BKL_RUN_ID`
-- `BKL_TOOL_CALL_ID`
-- `BKL_ARTIFACT_DIR`
+- `Agent Engine_RUN_ID`
+- `Agent Engine_TOOL_CALL_ID`
+- `Agent Engine_ARTIFACT_DIR`
 
-Tool 产物必须写入 `BKL_ARTIFACT_DIR`，然后把路径放入输出，由 Skill Runtime 登记为 Artifact。Python Tool 在独立子进程执行，但**不是安全沙箱**；只能安装和执行可信包。
+Tool 产物必须写入 `Agent Engine_ARTIFACT_DIR`，然后把路径放入输出，由 Skill Runtime 登记为 Artifact。Python Tool 在独立子进程执行，但**不是安全沙箱**；只能安装和执行可信包。
 
 API Tool 目前支持 GET query 参数及 POST/PUT/PATCH JSON body，可由简单 OpenAPI operation 导入。复杂的 path 参数、认证形态、分页和非 JSON 响应需要在生产化阶段增强或先以自定义 Tool 包实现。
 
@@ -275,7 +275,7 @@ import asyncio
 from app.engine import SkillEngine
 
 async def main() -> None:
-    engine = SkillEngine.load("bkl.yaml", catalog_path=".bkl/catalog.json")
+    engine = SkillEngine.load("agent.yaml", catalog_path=".agent/catalog.json")
     await engine.register_tool("resources/tools/subtitle_generate_srt")
     await engine.register_skill("resources/skills/talking-video")
     result = await engine.run_skill(
@@ -295,17 +295,17 @@ asyncio.run(main())
 
 ```bash
 cd engine
-bkl tool list
-bkl skill list
-bkl skill run <skill-id> <input.json> --skills-dir resources/skills --tools-dir resources/tools
-bkl chat --once "生成 60 秒程序员护眼台灯口播视频" --output json
-bkl run list
-bkl trace show <run-id>
-bkl workspace ensure demo --name "演示空间"
-bkl workspace scan demo --identity-id alice
+ae tool list
+ae skill list
+ae skill run <skill-id> <input.json> --skills-dir resources/skills --tools-dir resources/tools
+ae chat --once "生成 60 秒程序员护眼台灯口播视频" --output json
+ae run list
+ae trace show <run-id>
+ae workspace ensure demo --name "演示空间"
+ae workspace scan demo --identity-id alice
 ```
 
-运行状态为 `waiting_approval` 时，先在 API 或运行控制台处理 Tool 审批，再执行 `bkl`/API 的 run resume 操作。CLI 的完整参数请用 `bkl --help`、`bkl skill --help` 查看。
+运行状态为 `waiting_approval` 时，先在 API 或运行控制台处理 Tool 审批，再执行 `ae`/API 的 run resume 操作。CLI 的完整参数请用 `ae --help`、`ae skill --help` 查看。
 
 ### HTTP API
 
@@ -347,7 +347,7 @@ Agent 的自动路由当前是可解释的关键词/元数据评分，不是 LLM
 默认本地运行会创建以下状态：
 
 ```text
-.bkl/
+.agent/
 ├── catalog.json       # 已注册 Tool/Skill 的路径缓存
 ├── workspaces.json    # workspace、identity、Skill 绑定
 ├── sessions.json      # chat session 与 turn
@@ -399,10 +399,10 @@ uv --cache-dir .uv-cache run --extra dev mypy app
 
 | 现象 | 优先检查 |
 | --- | --- |
-| 模型调用失败 | `bkl.yaml` 的 active profile、`.env` 环境变量、base URL、协议是否匹配。 |
+| 模型调用失败 | `agent.yaml` 的 active profile、`.env` 环境变量、base URL、协议是否匹配。 |
 | Tool 无法执行 | `tool.yaml` 的 entry/schema、Tool 是否已注册、Skill allow 列表与 identity policy。 |
 | Run 停在审批 | `GET /tool-approvals`，处理对应记录后恢复 Run。 |
-| 服务重启后资源消失 | 使用 `bkl tool/skill register` 写入 `.bkl/catalog.json`，并以相同 `--catalog` 启动。 |
+| 服务重启后资源消失 | 使用 `ae tool/skill register` 写入 `.agent/catalog.json`，并以相同 `--catalog` 启动。 |
 | 输出校验失败 | 对照 Skill/Tool output schema，确保模型或 Tool 返回 JSON object 而不是额外文本。 |
 
 ## 生产化与迭代路线
@@ -421,8 +421,8 @@ uv --cache-dir .uv-cache run --extra dev mypy app
 - [架构总览与演进](docs/架构总览与演进.md)：当前分层、主要调用链、依赖规则和目标架构。
 - [技术设计与生产化](docs/技术设计与生产化.md)：契约、运行时、模型、Tool、存储、安全、部署建议。
 - [当前能力评估与上线路线](docs/当前能力评估与上线路线.md)：基于代码与测试的成熟度结论、风险与迭代计划。
-- [使用指南](docs/BKL_Usage_Guide.md)：补充 CLI/HTTP 操作说明。
-- [项目结构](docs/BKL_Project_Structure.md)：历史目录职责说明。
-- [运行调用图](docs/BKL_Runtime_Call_Graph.md)：调用图与时序图。
+- [使用指南](docs/Usage_Guide.md)：补充 CLI/HTTP 操作说明。
+- [项目结构](docs/Project_Structure.md)：历史目录职责说明。
+- [运行调用图](docs/Runtime_Call_Graph.md)：调用图与时序图。
 
 历史设计文档保留用于追溯；以本 README 和上述三份中文文档作为当前工程实施基线。

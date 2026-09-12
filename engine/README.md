@@ -1,17 +1,17 @@
-# bkl-skill-engine(后端内核)
+# agent-engine(后端内核)
 
-BKL AI 产品的 Python Skill 运行时内核。这里是独立的项目根:构建、运行、测试都从本目录启动。
+Agent Engine AI 产品的 Python Skill 运行时内核。这里是独立的项目根:构建、运行、测试都从本目录启动。
 
 ```bash
 cd engine
 uv --cache-dir .uv-cache run --extra dev python -m pytest   # 测试
-uv --cache-dir .uv-cache run --extra dev bkl --version      # CLI
-uv --cache-dir .uv-cache run --extra dev bkl api --host 0.0.0.0 --port 8000  # 启动 API
+uv --cache-dir .uv-cache run --extra dev ae --version      # CLI
+uv --cache-dir .uv-cache run --extra dev ae api --host 0.0.0.0 --port 8000  # 启动 API
 ```
 
 - 包代码:`app/`(`engine.py` 是唯一公共门面 `SkillEngine`)
 - 测试:`tests/`;本地资源包:`resources/`
-- 运行时输出:`.bkl/`、`data/`(均已 gitignore)
+- 运行时输出:`.agent/`、`data/`(均已 gitignore)
 - 架构与使用文档:仓库根目录的 `README.md` 与 `docs/`
 - 变更流程规范:仓库根目录的 `openspec/`
 

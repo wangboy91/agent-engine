@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from app.application.execution.skill_runtime import SkillRuntimeError
-from app.domain.errors import BklEngineError
+from app.domain.errors import AgentEngineError
 from app.domain.execution import RunContext
 from app.domain.model import ModelResponse, ToolCallRequest
 from app.engine import SkillEngine
@@ -727,7 +727,7 @@ def test_skill_runtime_injects_memory_snapshot_into_system_prompt(tmp_path: Path
     engine = SkillEngine.create_for_testing(
         artifact_root=tmp_path,
         model_provider=provider,
-        memory_root=tmp_path / ".bkl" / "memory",
+        memory_root=tmp_path / ".agent" / "memory",
     )
     engine.memory_store.append_entry(
         "workspace_content_ops",
@@ -835,7 +835,7 @@ class FailingModelProvider:
         tools: list[dict[str, object]],
     ) -> ModelResponse:
         del profile, messages, tools
-        raise BklEngineError(
+        raise AgentEngineError(
             "MODEL_PROVIDER_ERROR",
             "model endpoint disconnected",
             {"error_type": "RemoteProtocolError"},
@@ -856,7 +856,7 @@ class RetryOnceModelProvider:
         del profile, messages, tools
         self.calls += 1
         if self.calls == 1:
-            raise BklEngineError(
+            raise AgentEngineError(
                 "MODEL_PROVIDER_ERROR",
                 "model endpoint disconnected",
                 {"error_type": "RemoteProtocolError"},
@@ -932,7 +932,7 @@ def _write_json_output_skill(tmp_path: Path, skill_id: str, output_key: str) -> 
         ),
         encoding="utf-8",
     )
-    (skill_dir / "bkl.skill.json").write_text(
+    (skill_dir / "agent.skill.json").write_text(
         json.dumps(
             {
                 "id": skill_id,
@@ -984,7 +984,7 @@ def _write_dag_workflow_skill(tmp_path: Path) -> Path:
         ),
         encoding="utf-8",
     )
-    (skill_dir / "bkl.skill.json").write_text(
+    (skill_dir / "agent.skill.json").write_text(
         json.dumps(
             {
                 "id": "dag-workflow",

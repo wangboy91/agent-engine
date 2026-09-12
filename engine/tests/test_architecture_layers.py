@@ -2,7 +2,7 @@ import ast
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-BKL_ENGINE_ROOT = PROJECT_ROOT / "app"
+APP_ROOT = PROJECT_ROOT / "app"
 APPLICATION_ROOT = PROJECT_ROOT / "app" / "application"
 
 
@@ -10,7 +10,7 @@ def test_app_top_level_uses_ddd_layout_only() -> None:
     allowed_directories = {"application", "domain", "infrastructure", "interfaces"}
     actual_directories = {
         path.name
-        for path in BKL_ENGINE_ROOT.iterdir()
+        for path in APP_ROOT.iterdir()
         if path.is_dir() and path.name != "__pycache__"
     }
 

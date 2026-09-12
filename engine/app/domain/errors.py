@@ -3,7 +3,7 @@
 from typing import Any
 
 
-class BklEngineError(Exception):
+class AgentEngineError(Exception):
     """Base exception for expected engine errors."""
 
     def __init__(

@@ -1,4 +1,4 @@
-# BKL Skill Engine 技术需求文档
+# Agent Engine 技术需求文档
 
 版本：v0.1  
 技术栈：Python  
@@ -82,7 +82,7 @@ AI口播视频智能体 Agent
 
 ### 3.1 两种执行能力
 
-BKL 必须同时支持两种执行模式：
+Agent Engine 必须同时支持两种执行模式：
 
 ```text
 Direct Skill Execution
@@ -96,9 +96,9 @@ Agent-Orchestrated Execution
 
 这两种模式不能分裂成两套系统。Agent 是 `SkillEngine` 外面的一层受控编排，不是新的业务运行时。
 
-详细设计见 [BKL Agent Runtime Engineering Plan](BKL_Agent_Runtime_Engineering.md)。
+详细设计见 [Agent Engine Agent Runtime Engineering Plan](Agent_Runtime_Engineering.md)。
 
-记忆、知识库、历史会话搜索和 Prompt Cache 设计见 [BKL Memory, Knowledge, and Cache Design](BKL_Memory_Knowledge_Cache_Design.md)。这些能力属于 Agent/Runtime 的上下文增强层，不应该让每个 Skill 强制依赖 RAG；第一版应按需检索 Markdown 知识片段并注入 prompt。
+记忆、知识库、历史会话搜索和 Prompt Cache 设计见 [Agent Engine Memory, Knowledge, and Cache Design](Memory_Knowledge_Cache_Design.md)。这些能力属于 Agent/Runtime 的上下文增强层，不应该让每个 Skill 强制依赖 RAG；第一版应按需检索 Markdown 知识片段并注入 prompt。
 
 ---
 
@@ -152,7 +152,7 @@ SaaS 营销站
                     │ REST / SDK / gRPC
                     ▼
 ┌──────────────────────────────────────┐
-│          BKL Skill Engine API         │
+│          Agent Engine API         │
 │       统一 Skill 执行入口              │
 └───────────────────┬──────────────────┘
                     │
@@ -179,7 +179,7 @@ SaaS 营销站
 ```text
 爆款实验室 Web UI
   ↓
-调用 BKL Skill Engine 云服务
+调用 Agent Engine 云服务
   ↓
 使用平台模型 Key
   ↓
@@ -195,7 +195,7 @@ SaaS 营销站
 ```text
 本地桌面 UI
   ↓
-调用本机 BKL Skill Engine
+调用本机 Agent Engine
   ↓
 使用用户自己的 OpenRouter / 火山 Key
   ↓
@@ -209,7 +209,7 @@ SaaS 营销站
 ```text
 客户自己的服务器
   ↓
-部署 BKL Skill Engine
+部署 Agent Engine
   ↓
 接客户自己的模型 / API / 素材库
   ↓
@@ -329,7 +329,7 @@ Redis / Queue
 ```text
 加载 Skill
 校验 SKILL.md frontmatter
-校验 bkl.skill.json
+校验 agent.skill.json
 校验 input_schema
 校验 output_schema
 管理 Skill 版本
@@ -635,7 +635,7 @@ POST /skills/talking-video/runs
     "duration_seconds": 60
   },
   "context": {
-    "project_id": "bkl_lab",
+    "project_id": "agent_lab",
     "user_id": "user_001"
   }
 }
@@ -786,13 +786,13 @@ Skill 目录结构：
 skills/
   talking-video/
     SKILL.md
-    bkl.skill.json
+    agent.skill.json
     input.schema.json
     output.schema.json
     examples.json
 ```
 
-第一版采用行业通用 Skill 形态：每个 Skill 包必须包含标准 `SKILL.md`，并通过 BKL 专用的 `bkl.skill.json` 描述运行时配置。
+第一版采用行业通用 Skill 形态：每个 Skill 包必须包含标准 `SKILL.md`，并通过 Agent Engine 专用的 `agent.skill.json` 描述运行时配置。
 
 `SKILL.md` 由两部分组成：
 
@@ -808,7 +808,7 @@ name
 description
 ```
 
-`SKILL.md` 不允许写入 BKL Engine 私有运行时字段。schema、tools、model、limits 等引擎配置统一放在同目录的 `bkl.skill.json`，避免污染标准 Skill 元数据和 Markdown instructions。
+`SKILL.md` 不允许写入 Agent Engine Engine 私有运行时字段。schema、tools、model、limits 等引擎配置统一放在同目录的 `agent.skill.json`，避免污染标准 Skill 元数据和 Markdown instructions。
 
 ### 14.1 SKILL.md 示例
 
@@ -840,7 +840,7 @@ description: Use when generating a structured talking-video draft from a topic, 
 {{input}}
 ```
 
-### 14.2 bkl.skill.json 示例
+### 14.2 agent.skill.json 示例
 
 ```json
 {
@@ -887,7 +887,7 @@ description: Use when generating a structured talking-video draft from a topic, 
 
 ### 14.3 格式约束
 
-第一版只支持这一套 Skill 包规范：标准 `SKILL.md` + BKL `bkl.skill.json`。旧式 `skill.yaml + prompt.md` 不兼容，避免项目同时存在两套 Skill 规范。
+第一版只支持这一套 Skill 包规范：标准 `SKILL.md` + Agent Engine `agent.skill.json`。旧式 `skill.yaml + prompt.md` 不兼容，避免项目同时存在两套 Skill 规范。
 
 ---
 
@@ -1137,35 +1137,35 @@ async def run_skill(skill_id: str, input_data: dict) -> dict:
 命令示例：
 
 ```bash
-bkl init
-bkl serve --host 127.0.0.1 --port 8000 --config bkl.yaml
+ae init
+ae serve --host 127.0.0.1 --port 8000 --config agent.yaml
 
-bkl tool register ./tools/subtitle_generate_srt
-bkl tool import-openapi ./engine/resources/volc-openapi.json
-bkl tool list
-bkl tool test subtitle_generate_srt ./engine/resources/subtitle_input.json
+ae tool register ./tools/subtitle_generate_srt
+ae tool import-openapi ./engine/resources/volc-openapi.json
+ae tool list
+ae tool test subtitle_generate_srt ./engine/resources/subtitle_input.json
 
-bkl skill register ./skills/talking-video
-bkl skill list
-bkl skill run talking-video ./engine/resources/talking_video_input.json
+ae skill register ./skills/talking-video
+ae skill list
+ae skill run talking-video ./engine/resources/talking_video_input.json
 
-bkl run list
-bkl run show <run_id>
-bkl trace show <run_id>
+ae run list
+ae run show <run_id>
+ae trace show <run_id>
 ```
 
-`bkl init` 负责生成 `bkl.yaml + .env`。真实 API Key 只能写入 `.env`，不允许写入 `bkl.yaml`。
+`ae init` 负责生成 `agent.yaml + .env`。真实 API Key 只能写入 `.env`，不允许写入 `agent.yaml`。
 
-`bkl serve` 负责启动 FastAPI 服务。服务端部署、本地 GUI、其他业务系统 HTTP 调用都应复用这个入口，不再单独绕过 `SkillEngine`。
+`ae serve` 负责启动 FastAPI 服务。服务端部署、本地 GUI、其他业务系统 HTTP 调用都应复用这个入口，不再单独绕过 `SkillEngine`。
 
 ---
 
 ## 20. 项目目录结构
 
-当前源码目录职责详见 [BKL Project Structure](BKL_Project_Structure.md)。本节保留宏观目录结构，具体文件说明以代码导览文档为准。
+当前源码目录职责详见 [Agent Engine Project Structure](Project_Structure.md)。本节保留宏观目录结构，具体文件说明以代码导览文档为准。
 
 ```text
-bkl-skill-engine/
+agent-engine/
   README.md
   TECH_SPEC.md
   pyproject.toml
@@ -1230,7 +1230,7 @@ bkl-skill-engine/
     skills/
       talking-video/
         SKILL.md
-        bkl.skill.json
+        agent.skill.json
         input.schema.json
         output.schema.json
         examples.json
@@ -1630,7 +1630,7 @@ API / CLI 能查询结果
 给 Codex 的任务：
 
 ```text
-请初始化一个 Python 3.12 项目，项目名为 bkl-skill-engine。
+请初始化一个 Python 3.12 项目，项目名为 agent-engine。
 
 要求：
 1. 使用 pyproject.toml 管理依赖。
@@ -1638,7 +1638,7 @@ API / CLI 能查询结果
 3. 创建基础目录结构。
 4. 添加 README.md。
 5. 添加 .env.example。
-6. 添加一个最简单的 CLI 命令：bkl --version。
+6. 添加一个最简单的 CLI 命令：ae --version。
 7. 添加 pytest 基础测试。
 8. 确保 pytest、ruff、mypy 可以运行。
 ```
@@ -1649,7 +1649,7 @@ API / CLI 能查询结果
 pytest 通过
 ruff check 通过
 mypy 通过
-bkl --version 可执行
+ae --version 可执行
 ```
 
 ---
@@ -1721,7 +1721,7 @@ pytest 通过
 1. 定义 Skill、SkillLimits、SkillModelConfig。
 2. 支持读取行业标准 SKILL.md。
 3. 支持解析 YAML frontmatter 和 Markdown instructions。
-4. 支持读取 BKL bkl.skill.json。
+4. 支持读取 Agent Engine agent.skill.json。
 5. 支持读取 input.schema.json 和 output.schema.json。
 6. 支持 allowed_tools 配置。
 7. 添加 engine/resources/skills/talking-video 示例。
@@ -1733,7 +1733,7 @@ pytest 通过
 ```text
 可以成功加载 talking-video Skill
 缺少 SKILL.md frontmatter 时会报错
-缺少 bkl.skill.json 时会报错
+缺少 agent.skill.json 时会报错
 allowed_tools 为空时会报错
 pytest 通过
 ```
@@ -1926,22 +1926,22 @@ pytest 通过
 请实现 Typer CLI。
 
 要求：
-1. bkl init
-2. bkl serve
-3. bkl tool register <path>
-4. bkl tool list
-5. bkl tool test <tool_id> <input_json>
-6. bkl skill register <path>
-7. bkl skill list
-8. bkl skill run <skill_id> <input_json>
-9. bkl trace show <run_id>
+1. ae init
+2. ae serve
+3. ae tool register <path>
+4. ae tool list
+5. ae tool test <tool_id> <input_json>
+6. ae skill register <path>
+7. ae skill list
+8. ae skill run <skill_id> <input_json>
+9. ae trace show <run_id>
 10. 使用 Rich 美化输出。
 ```
 
 验收标准：
 
 ```text
-可以通过 CLI 初始化 bkl.yaml + .env
+可以通过 CLI 初始化 agent.yaml + .env
 可以通过 CLI 启动 FastAPI 服务
 可以通过 CLI 注册 Tool
 可以通过 CLI 注册 Skill
@@ -2110,7 +2110,7 @@ Trace 查询
 产出：
 
 ```text
-外部项目可以通过 API 或 SDK 调用 BKL Skill Engine
+外部项目可以通过 API 或 SDK 调用 Agent Engine
 ```
 
 ---
@@ -2151,7 +2151,7 @@ viral_score Tool
 然后调用 Engine：
 
 ```text
-Product App → BKL Skill Engine → Skill → Tool → Artifact
+Product App → Agent Engine → Skill → Tool → Artifact
 ```
 
 例如：
@@ -2213,12 +2213,12 @@ SaaS 前端
 
 ## 34. 最终目标
 
-BKL Skill Engine 的最终目标不是做一个通用 Agent 平台，而是成为所有 AI 产品的底层执行内核。
+Agent Engine 的最终目标不是做一个通用 Agent 平台，而是成为所有 AI 产品的底层执行内核。
 
 最终结构：
 
 ```text
-bkl-skill-engine
+agent-engine
   ↑
   ├── 爆款实验室 SaaS
   ├── 本地口播视频软件
@@ -2245,46 +2245,46 @@ CLI
 
 ## 34.1 安装与部署形态
 
-BKL 只维护一个 Core Engine，不做多套互相分叉的引擎实现。
+Agent Engine 只维护一个 Core Engine，不做多套互相分叉的引擎实现。
 
-详细决策文档见 [BKL Core Engine Installation Forms](BKL_Core_Engine_Installation_Forms.md)。
+详细决策文档见 [Agent Engine Core Engine Installation Forms](Core_Engine_Installation_Forms.md)。
 
 推荐安装形态：
 
 ```text
-bkl-core
+agent-engine-core
   Skill Loader
   Tool Runner
   Model Router
   Runtime
   Trace / Artifact / Catalog
 
-bkl-cli
-  bkl init
-  bkl chat
-  bkl skill run
-  bkl tool import
-  bkl serve
+agent-engine-cli
+  ae init
+  ae chat
+  ae skill run
+  ae tool import
+  ae serve
 
-bkl-server
+agent-engine-server
   FastAPI HTTP API
   Auth
   Persistence
   Worker / Queue
   Docker image
 
-bkl-desktop
+agent-engine-desktop
   Local GUI
-  Local bkl serve
+  Local ae serve
   Model / Tool / Skill / Run management
 ```
 
 约束：
 
 ```text
-Skill 规范只有一套：SKILL.md + bkl.skill.json
+Skill 规范只有一套：SKILL.md + agent.skill.json
 Tool 规范只有一套：tool.yaml
-模型配置只有一套：bkl.yaml + .env
+模型配置只有一套：agent.yaml + .env
 CLI、HTTP、GUI 都调用同一个 SkillEngine
 ```
 
@@ -2309,9 +2309,9 @@ Trace Store
 Artifact Store
 Typer CLI
 FastAPI API
-bkl init
-bkl serve
-持久化 Catalog：.bkl/catalog.json
+ae init
+ae serve
+持久化 Catalog：.agent/catalog.json
 ```
 
 P0 中 OpenAI-compatible Provider、API Tool Executor、OpenAPI Importer 可以实现基础骨架，但测试主链路必须优先使用 Mock Model Provider，避免第一阶段被外部模型 Key、网络和第三方 API 阻塞。
@@ -2356,7 +2356,7 @@ SDK ─┘
 第一版需要明确配置入口，默认路径为：
 
 ```text
-./bkl.yaml
+./agent.yaml
 ./.env
 ```
 
@@ -2364,7 +2364,7 @@ SDK ─┘
 
 ```yaml
 app:
-  name: bkl-skill-engine
+  name: agent-engine
   environment: local
 
 storage:
@@ -2500,7 +2500,7 @@ P0 即使内部同步执行，也必须保存 `Run` 和 `Trace`，保证后续�
 CLI 命令必须能表达 API 的核心参数：
 
 ```bash
-bkl skill run talking-video ./engine/resources/inputs/talking-video-input.json \
+ae skill run talking-video ./engine/resources/inputs/talking-video-input.json \
   --context ./engine/resources/inputs/context.json \
   --mode sync \
   --output json
@@ -2572,12 +2572,12 @@ Python Tool 不应该自己决定最终 artifact URI。
 Engine 在执行 Tool 时通过环境变量传入：
 
 ```text
-BKL_RUN_ID
-BKL_TOOL_CALL_ID
-BKL_ARTIFACT_DIR
+Agent Engine_RUN_ID
+Agent Engine_TOOL_CALL_ID
+Agent Engine_ARTIFACT_DIR
 ```
 
-Python Tool 只把文件写到 `BKL_ARTIFACT_DIR` 下，并在 stdout JSON 中返回相对路径：
+Python Tool 只把文件写到 `Agent Engine_ARTIFACT_DIR` 下，并在 stdout JSON 中返回相对路径：
 
 ```json
 {

@@ -21,5 +21,5 @@
 
 ## 4. 收尾
 
-- [ ] 移除 `engine/bkl_engine/interfaces/http/static/runtime-console.html` 及挂载逻辑
+- [ ] 移除 `engine/app/interfaces/http/static/runtime-console.html` 及挂载逻辑
 - [ ] openspec verify -> archive

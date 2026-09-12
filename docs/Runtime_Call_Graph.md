@@ -1,4 +1,4 @@
-# BKL Runtime Call Graph
+# Agent Engine Runtime Call Graph
 
 本文说明当前代码里 `RunSkillUseCase`、`SkillRuntime`、`SkillEngine`、Agent、Ports 和 Infrastructure 的职责边界与调用关系。
 
@@ -6,10 +6,10 @@
 
 PlantUML 图放在 `doc/diagrams/`：
 
-- `bkl-layered-architecture.puml`：项目分层和依赖方向
-- `bkl-direct-skill-run-sequence.puml`：CLI / HTTP / SDK 直接运行 Skill 的调用链
-- `bkl-agent-message-sequence.puml`：自然语言 Agent 入口到 Skill 执行的调用链
-- `bkl-core-class-relations.puml`：核心类和 ports 的关系
+- `agent-layered-architecture.puml`：项目分层和依赖方向
+- `agent-direct-skill-run-sequence.puml`：CLI / HTTP / SDK 直接运行 Skill 的调用链
+- `agent-agent-message-sequence.puml`：自然语言 Agent 入口到 Skill 执行的调用链
+- `agent-engine-core-class-relations.puml`：核心类和 ports 的关系
 
 ## 核心判断
 

@@ -15,7 +15,7 @@ from starlette.responses import FileResponse, StreamingResponse
 from app.application.agent import HandleAgentMessageCommand, HandleAgentMessageUseCase
 from app.application.skill import RunSkillCommand, RunSkillUseCase
 from app.domain.agent.schemas import AgentResponse
-from app.domain.errors import BklEngineError
+from app.domain.errors import AgentEngineError
 from app.domain.execution import RunContext, TraceEvent
 from app.domain.policy import PolicyEffect, ToolApprovalStatus
 from app.engine import SkillEngine
@@ -110,7 +110,7 @@ class ChatMessageRequest(BaseModel):
 
 
 def create_app(engine: SkillEngine | None = None) -> FastAPI:
-    api = FastAPI(title="BKL Skill Engine", version="0.1.0")
+    api = FastAPI(title="Agent Engine", version="0.1.0")
     api.state.engine = engine or SkillEngine.load()
     api.mount("/ui/assets", StaticFiles(directory=STATIC_DIR), name="runtime-console-assets")
 
@@ -131,7 +131,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
                 description=request.description,
             )
             return workspace.model_dump(mode="json")
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=400, detail=exc.message) from exc
 
     @api.get("/workspaces")
@@ -154,7 +154,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
                 description=request.description,
             )
             return identity.model_dump(mode="json")
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=400, detail=exc.message) from exc
 
     @api.get("/workspaces/{workspace_id}/identities")
@@ -164,7 +164,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
                 identity.model_dump(mode="json")
                 for identity in _engine(api).workspace_store.list_identities(workspace_id)
             ]
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=404, detail=exc.message) from exc
 
     @api.post("/workspaces/{workspace_id}/skills")
@@ -181,7 +181,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
                 enabled=request.enabled,
             )
             return workspace_skill.model_dump(mode="json")
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=400, detail=exc.message) from exc
 
     @api.get("/workspaces/{workspace_id}/skills")
@@ -197,7 +197,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
                     enabled_only=enabled_only,
                 )
             ]
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=404, detail=exc.message) from exc
 
     @api.post("/workspaces/{workspace_id}/skills/scan")
@@ -233,7 +233,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
             registered_skill_ids: list[str] = []
             installed_skill_ids: list[str] = []
             bound_skill_ids: list[str] = []
-            for skill_path in _iter_package_dirs(Path(request.skills_dir), "bkl.skill.json"):
+            for skill_path in _iter_package_dirs(Path(request.skills_dir), "agent.skill.json"):
                 skill = await engine.register_skill(str(skill_path))
                 registered_skill_ids.append(skill.id)
                 engine.workspace_store.install_skill(
@@ -258,7 +258,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
                 "installed_skills": installed_skill_ids,
                 "bound_skills": bound_skill_ids,
             }
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=400, detail=exc.message) from exc
 
     @api.patch("/workspaces/{workspace_id}/skills/{skill_id}")
@@ -274,7 +274,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
                 request.enabled,
             )
             return workspace_skill.model_dump(mode="json")
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=400, detail=exc.message) from exc
 
     @api.post("/workspaces/{workspace_id}/identities/{identity_id}/skills/register")
@@ -301,7 +301,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
                 "workspace_skill": workspace_skill.model_dump(mode="json"),
                 "identity": identity.model_dump(mode="json"),
             }
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=400, detail=exc.message) from exc
 
     @api.post("/workspaces/{workspace_id}/identities/{identity_id}/tools/register")
@@ -329,7 +329,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
                 "tool": tool.model_dump(mode="json"),
                 "policy": rule.model_dump(mode="json"),
             }
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=400, detail=exc.message) from exc
 
     @api.post("/workspaces/{workspace_id}/identities/{identity_id}/skills")
@@ -346,7 +346,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
                 request.skill_id,
             )
             return identity.model_dump(mode="json")
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=400, detail=exc.message) from exc
 
     @api.get("/workspaces/{workspace_id}/identities/{identity_id}/skills")
@@ -360,7 +360,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
                 _engine(api).skill_registry.get_skill(skill_id).model_dump(mode="json")
                 for skill_id in skill_ids
             ]
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=404, detail=exc.message) from exc
 
     @api.post("/workspaces/{workspace_id}/secrets")
@@ -377,7 +377,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
                 description=request.description,
             )
             return secret.model_dump(mode="json")
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=400, detail=exc.message) from exc
 
     @api.get("/workspaces/{workspace_id}/secrets")
@@ -388,7 +388,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
                 secret.model_dump(mode="json")
                 for secret in _engine(api).secret_store.list_secrets(workspace_id=workspace_id)
             ]
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=404, detail=exc.message) from exc
 
     @api.post("/workspaces/{workspace_id}/tool-policies")
@@ -408,7 +408,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
                 enabled=request.enabled,
             )
             return rule.model_dump(mode="json")
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=400, detail=exc.message) from exc
 
     @api.get("/workspaces/{workspace_id}/tool-policies")
@@ -422,7 +422,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
                     identity_id=None,
                 )
             ]
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=404, detail=exc.message) from exc
 
     @api.post("/workspaces/{workspace_id}/identities/{identity_id}/tool-policies")
@@ -444,7 +444,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
                 enabled=request.enabled,
             )
             return rule.model_dump(mode="json")
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=400, detail=exc.message) from exc
 
     @api.get("/workspaces/{workspace_id}/identities/{identity_id}/tool-policies")
@@ -461,7 +461,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
                     identity_id=identity_id,
                 )
             ]
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=404, detail=exc.message) from exc
 
     @api.get("/tool-approvals")
@@ -483,7 +483,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
     def get_tool_approval(approval_id: str) -> dict[str, Any]:
         try:
             return _engine(api).policy_store.get_tool_approval(approval_id).model_dump(mode="json")
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=404, detail=exc.message) from exc
 
     @api.post("/tool-approvals/{approval_id}/approve")
@@ -497,7 +497,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
                 decided_by=request.decided_by,
             )
             return approval.model_dump(mode="json")
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=404, detail=exc.message) from exc
 
     @api.post("/tool-approvals/{approval_id}/deny")
@@ -511,7 +511,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
                 decided_by=request.decided_by,
             )
             return approval.model_dump(mode="json")
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=404, detail=exc.message) from exc
 
     @api.post("/tools/register")
@@ -519,7 +519,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
         try:
             tool = await _engine(api).register_tool(request.path)
             return tool.model_dump(mode="json")
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=400, detail=exc.message) from exc
 
     @api.get("/tools")
@@ -533,7 +533,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
     def get_tool(tool_id: str) -> dict[str, Any]:
         try:
             return _engine(api).tool_registry.get_tool(tool_id).model_dump(mode="json")
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=404, detail=exc.message) from exc
 
     @api.post("/skills/register")
@@ -541,7 +541,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
         try:
             skill = await _engine(api).register_skill(request.path)
             return skill.model_dump(mode="json")
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=400, detail=exc.message) from exc
 
     @api.get("/skills")
@@ -555,7 +555,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
     def get_skill(skill_id: str) -> dict[str, Any]:
         try:
             return _engine(api).skill_registry.get_skill(skill_id).model_dump(mode="json")
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=404, detail=exc.message) from exc
 
     @api.post("/skills/{skill_id}/runs")
@@ -566,7 +566,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
                 RunSkillCommand(skill_id=skill_id, input=request.input, context=context)
             )
             return run.model_dump(mode="json")
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=400, detail=exc.message) from exc
 
     @api.post("/skills/{skill_id}/runs/events")
@@ -592,7 +592,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
                     async for event_name, data in _stream_trace_events(queue, task, stream_id):
                         yield _sse_event(event_name, data)
                     run = await task
-                except BklEngineError as exc:
+                except AgentEngineError as exc:
                     yield _sse_event(
                         "run_failed",
                         {"code": exc.code, "message": exc.message, "details": exc.details},
@@ -620,7 +620,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
                 )
             )
             return response.model_dump(mode="json")
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=400, detail=exc.message) from exc
 
     @api.post("/chat/messages/events")
@@ -657,7 +657,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
                     async for event_name, data in _stream_trace_events(queue, task, stream_id):
                         yield _sse_event(event_name, data)
                     response = await task
-                except BklEngineError as exc:
+                except AgentEngineError as exc:
                     yield _sse_event(
                         "agent_failed",
                         {"code": exc.code, "message": exc.message, "details": exc.details},
@@ -713,7 +713,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
             try:
                 await _send_trace_events(websocket, queue, task, stream_id)
                 run = await task
-            except BklEngineError as exc:
+            except AgentEngineError as exc:
                 await websocket.send_json(
                     {
                         "event": "run_failed",
@@ -766,7 +766,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
             try:
                 await _send_trace_events(websocket, queue, task, stream_id)
                 response = await task
-            except BklEngineError as exc:
+            except AgentEngineError as exc:
                 await websocket.send_json(
                     {
                         "event": "agent_failed",
@@ -792,7 +792,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
     def get_run(run_id: str) -> dict[str, Any]:
         try:
             return _engine(api).run_store.get(run_id).model_dump(mode="json")
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=404, detail=exc.message) from exc
 
     @api.post("/runs/{run_id}/resume")
@@ -800,7 +800,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
         try:
             run = await _engine(api).resume_run(run_id)
             return run.model_dump(mode="json")
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=400, detail=exc.message) from exc
 
     @api.get("/runs/{run_id}/trace")
@@ -834,14 +834,14 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
     def get_session(session_id: str) -> dict[str, Any]:
         try:
             return _engine(api).session_store.get(session_id).model_dump(mode="json")
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=404, detail=exc.message) from exc
 
     @api.get("/artifacts/{artifact_id}")
     def get_artifact(artifact_id: str) -> dict[str, Any]:
         try:
             return _engine(api).artifact_store.get(artifact_id).model_dump(mode="json")
-        except BklEngineError as exc:
+        except AgentEngineError as exc:
             raise HTTPException(status_code=404, detail=exc.message) from exc
 
     return api
@@ -853,7 +853,7 @@ def _engine(api: FastAPI) -> SkillEngine:
 
 def _iter_package_dirs(root: Path, marker: str) -> list[Path]:
     if not root.exists():
-        raise BklEngineError(
+        raise AgentEngineError(
             "PACKAGE_SCAN_ROOT_NOT_FOUND",
             f"Package scan root not found: {root}",
             {"root": str(root), "marker": marker},

@@ -1,7 +1,7 @@
 import re
 from pathlib import Path
 
-from app.domain.errors import BklEngineError
+from app.domain.errors import AgentEngineError
 from app.domain.memory import MemorySnapshot, MemorySource, MemoryTarget
 
 DEFAULT_WORKSPACE_ID = "default_workspace"
@@ -55,7 +55,7 @@ class LocalMarkdownMemoryStore:
         content: str,
     ) -> MemorySnapshot:
         if target not in {"memory", "user"}:
-            raise BklEngineError("MEMORY_TARGET_INVALID", f"Invalid memory target: {target}")
+            raise AgentEngineError("MEMORY_TARGET_INVALID", f"Invalid memory target: {target}")
         resolved_workspace_id = self._scope_segment(
             workspace_id or DEFAULT_WORKSPACE_ID,
             "workspace_id",
@@ -91,7 +91,7 @@ class LocalMarkdownMemoryStore:
 
     def _scope_segment(self, value: str, field_name: str) -> str:
         if not _VALID_SCOPE_SEGMENT.fullmatch(value):
-            raise BklEngineError(
+            raise AgentEngineError(
                 "MEMORY_SCOPE_INVALID",
                 f"Invalid memory {field_name}: {value}",
             )

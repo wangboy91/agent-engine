@@ -8,11 +8,11 @@ import sys
 from jsonschema import ValidationError as JsonSchemaValidationError
 from jsonschema import validate
 
-from app.domain.errors import BklEngineError
+from app.domain.errors import AgentEngineError
 from app.domain.tool import Tool, ToolExecutionContext, ToolExecutionResult
 
 
-class ToolExecutionError(BklEngineError):
+class ToolExecutionError(AgentEngineError):
     """Raised when a Tool cannot be executed successfully."""
 
 
@@ -38,9 +38,9 @@ class PythonToolRunner:
         artifact_dir.mkdir(parents=True, exist_ok=True)
         env = {
             **os.environ,
-            "BKL_RUN_ID": context.run_id,
-            "BKL_TOOL_CALL_ID": context.tool_call_id,
-            "BKL_ARTIFACT_DIR": str(artifact_dir),
+            "AGENT_RUN_ID": context.run_id,
+            "AGENT_TOOL_CALL_ID": context.tool_call_id,
+            "AGENT_ARTIFACT_DIR": str(artifact_dir),
         }
 
         process = await asyncio.create_subprocess_exec(

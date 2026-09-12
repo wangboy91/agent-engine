@@ -9,7 +9,7 @@ import yaml
 from pydantic import ValidationError
 
 from app.domain.common import JsonObject
-from app.domain.errors import BklEngineError
+from app.domain.errors import AgentEngineError
 from app.domain.skill import (
     Skill,
     SkillExecutionConfig,
@@ -19,14 +19,14 @@ from app.domain.skill import (
 )
 
 
-class SkillLoadError(BklEngineError):
+class SkillLoadError(AgentEngineError):
     """Raised when a Skill package cannot be loaded or validated."""
 
     def __init__(self, message: str) -> None:
         super().__init__("SKILL_LOAD_ERROR", message)
 
 
-RUNTIME_CONFIG_FILE = "bkl.skill.json"
+RUNTIME_CONFIG_FILE = "agent.skill.json"
 LEGACY_RUNTIME_CONFIG_FILE = "skill.config.json"
 DEFAULT_INPUT_SCHEMA: JsonObject = {
     "type": "object",
@@ -59,9 +59,9 @@ def _load_standard_skill(skill_dir: Path, skill_md_path: Path) -> Skill:
         source=skill_md_path,
     )
 
-    if "bkl" in frontmatter:
+    if "agent" in frontmatter:
         raise SkillLoadError(
-            f"SKILL.md must not contain BKL runtime config; move it to {RUNTIME_CONFIG_FILE}: "
+            f"SKILL.md must not contain agent runtime config; move it to {RUNTIME_CONFIG_FILE}: "
             f"{skill_md_path}"
         )
 

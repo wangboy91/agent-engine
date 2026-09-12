@@ -5,7 +5,7 @@ from collections import deque
 from collections.abc import Awaitable, Callable
 from typing import Any, Protocol
 
-from app.domain.errors import BklEngineError
+from app.domain.errors import AgentEngineError
 from app.domain.model import ModelResponse, ModelUsage, ToolCallRequest
 from app.infrastructure.config.engine_config import EngineConfig, ModelProfileConfig
 
@@ -469,7 +469,7 @@ class ModelRouter:
         provider_id = profile if profile in self.providers else self.active_profile
         provider = self.providers.get(provider_id)
         if provider is None:
-            raise BklEngineError(
+            raise AgentEngineError(
                 "CONFIG_INVALID",
                 f"Model profile is not configured: {provider_id}",
             )
@@ -499,4 +499,4 @@ def _build_provider(profile: ModelProfileConfig) -> ModelProvider:
         from app.infrastructure.model_gateway.providers.anthropic import AnthropicProvider
 
         return AnthropicProvider(profile)
-    raise BklEngineError("CONFIG_INVALID", f"Unsupported model protocol: {profile.protocol}")
+    raise AgentEngineError("CONFIG_INVALID", f"Unsupported model protocol: {profile.protocol}")

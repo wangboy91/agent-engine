@@ -1,6 +1,6 @@
-# BKL Business Agent Base Roadmap
+# Agent Engine Business Agent Base Roadmap
 
-Status: proposed iteration roadmap. This document complements `BKL_Development_Checklist.md`; it focuses on architecture hardening before expanding product features.
+Status: proposed iteration roadmap. This document complements `Agent Engine_Development_Checklist.md`; it focuses on architecture hardening before expanding product features.
 
 ## 1. Goal
 
@@ -106,7 +106,7 @@ Tasks:
 
 Acceptance:
 
-- [ ] 重启 `bkl serve` 后仍能查询 run 和 trace。
+- [ ] 重启 `ae serve` 后仍能查询 run 和 trace。
 - [ ] Artifact 文件和 metadata 可以重新关联。
 - [ ] Agent turn 可以关联到 run_id。
 - [ ] trace 支持 parent-child 调用链。

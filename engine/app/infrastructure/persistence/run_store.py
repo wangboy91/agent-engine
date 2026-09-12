@@ -5,7 +5,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field, ValidationError
 
-from app.domain.errors import BklEngineError
+from app.domain.errors import AgentEngineError
 from app.domain.execution import RunResult
 
 
@@ -25,7 +25,7 @@ class InMemoryRunStore:
     def get(self, run_id: str) -> RunResult:
         run = self._runs.get(run_id)
         if run is None:
-            raise BklEngineError("RUN_NOT_FOUND", f"Run not found: {run_id}")
+            raise AgentEngineError("RUN_NOT_FOUND", f"Run not found: {run_id}")
         return run
 
     def list_runs(self) -> list[RunResult]:
@@ -50,12 +50,12 @@ class JsonRunStore(InMemoryRunStore):
             raw = json.loads(self.path.read_text(encoding="utf-8"))
             document = RunDocument.model_validate(raw)
         except json.JSONDecodeError as exc:
-            raise BklEngineError(
+            raise AgentEngineError(
                 "RUN_STORE_INVALID",
                 f"Invalid run store JSON: {self.path}",
             ) from exc
         except ValidationError as exc:
-            raise BklEngineError(
+            raise AgentEngineError(
                 "RUN_STORE_INVALID",
                 f"Invalid run store shape: {self.path}",
             ) from exc

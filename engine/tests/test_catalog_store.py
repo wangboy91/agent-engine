@@ -7,7 +7,7 @@ from app.engine import SkillEngine
 
 def test_engine_persists_and_loads_catalog_entries(tmp_path: Path) -> None:
     config_path = _write_mock_config(tmp_path)
-    catalog_path = tmp_path / ".bkl" / "catalog.json"
+    catalog_path = tmp_path / ".agent" / "catalog.json"
 
     engine = SkillEngine.load(config_path, catalog_path=catalog_path)
     tool = _run(engine.register_tool("resources/tools/subtitle_generate_srt"))
@@ -37,7 +37,7 @@ def test_engine_persists_and_loads_catalog_entries(tmp_path: Path) -> None:
 
 def test_engine_load_migrates_legacy_examples_catalog_paths(tmp_path: Path) -> None:
     config_path = _write_mock_config(tmp_path)
-    catalog_path = tmp_path / ".bkl" / "catalog.json"
+    catalog_path = tmp_path / ".agent" / "catalog.json"
     catalog_path.parent.mkdir(parents=True)
     catalog_path.write_text(
         json.dumps(
@@ -78,12 +78,12 @@ def test_engine_can_disable_catalog_loading(tmp_path: Path) -> None:
     engine = SkillEngine.load(config_path, catalog_path=None)
     _run(engine.register_tool("resources/tools/subtitle_generate_srt"))
 
-    assert not (tmp_path / ".bkl" / "catalog.json").exists()
+    assert not (tmp_path / ".agent" / "catalog.json").exists()
 
 
 def test_engine_load_persists_workspace_and_session_state(tmp_path: Path) -> None:
     config_path = _write_mock_config(tmp_path)
-    catalog_path = tmp_path / ".bkl" / "catalog.json"
+    catalog_path = tmp_path / ".agent" / "catalog.json"
 
     engine = SkillEngine.load(config_path, catalog_path=catalog_path)
     _run(engine.register_tool("resources/tools/subtitle_generate_srt"))
@@ -118,7 +118,7 @@ def test_engine_load_persists_workspace_and_session_state(tmp_path: Path) -> Non
 
 def test_engine_load_persists_run_and_trace_state(tmp_path: Path) -> None:
     config_path = _write_mock_config(tmp_path)
-    catalog_path = tmp_path / ".bkl" / "catalog.json"
+    catalog_path = tmp_path / ".agent" / "catalog.json"
 
     engine = SkillEngine.load(config_path, catalog_path=catalog_path)
     engine.run_store.save(RunResult(run_id="run_001", status="succeeded", skill_id="demo"))
@@ -139,7 +139,7 @@ def test_engine_load_persists_run_and_trace_state(tmp_path: Path) -> None:
 
 def test_engine_load_persists_tool_policy_state(tmp_path: Path) -> None:
     config_path = _write_mock_config(tmp_path)
-    catalog_path = tmp_path / ".bkl" / "catalog.json"
+    catalog_path = tmp_path / ".agent" / "catalog.json"
 
     engine = SkillEngine.load(config_path, catalog_path=catalog_path)
     engine.policy_store.set_tool_rule(
@@ -162,7 +162,7 @@ def test_engine_load_persists_tool_policy_state(tmp_path: Path) -> None:
 
 def test_engine_load_persists_secret_state(tmp_path: Path) -> None:
     config_path = _write_mock_config(tmp_path)
-    catalog_path = tmp_path / ".bkl" / "catalog.json"
+    catalog_path = tmp_path / ".agent" / "catalog.json"
 
     engine = SkillEngine.load(config_path, catalog_path=catalog_path)
     engine.secret_store.set_secret(
@@ -180,7 +180,7 @@ def test_engine_load_persists_secret_state(tmp_path: Path) -> None:
 
 
 def _write_mock_config(tmp_path: Path) -> Path:
-    config_path = tmp_path / "bkl.yaml"
+    config_path = tmp_path / "agent.yaml"
     config_path.write_text(
         "\n".join(
             [

@@ -1,10 +1,10 @@
-# BKL Project Structure
+# Agent Engine Project Structure
 
 本文是当前代码目录导览，用来解释每个目录、文件、主要类的职责，以及哪些模块已经实现、哪些模块只是为后续版本预留边界。
 
-目标架构和未来 DDD 分层见 [BKL Business Agent Base Architecture](BKL_Business_Agent_Base_Architecture.md)。
+目标架构和未来 DDD 分层见 [Agent Engine Business Agent Base Architecture](Business_Agent_Base_Architecture.md)。
 
-从当前代码迁移到业务智能体基座的迭代路线见 [BKL Business Agent Base Roadmap](BKL_Business_Agent_Base_Roadmap.md)。
+从当前代码迁移到业务智能体基座的迭代路线见 [Agent Engine Business Agent Base Roadmap](Business_Agent_Base_Roadmap.md)。
 
 ## 1. 为什么有些 Python 文件代码很少
 
@@ -77,8 +77,8 @@ engine/tests/
 doc/
   技术规格、开发清单、架构说明、运行请求说明、业务智能体基座架构和路线图
 
-bkl.yaml
-  本地模型配置，真实项目中可以由 bkl init 生成
+agent.yaml
+  本地模型配置，真实项目中可以由 ae init 生成
 
 .env
   本地密钥，不提交 git
@@ -203,7 +203,7 @@ class SkillEngine
 
 ```text
 SkillEngine.load(...)
-  从 bkl.yaml 和可选 catalog_path 创建 Engine。
+  从 agent.yaml 和可选 catalog_path 创建 Engine。
 
 SkillEngine.create_for_testing(...)
   创建 mock engine，用于测试和默认 CLI 示例。
@@ -218,7 +218,7 @@ run_skill(skill_id, input_data)
   调用 SkillRuntime 执行。
 
 load_catalog()
-  从 .bkl/catalog.json 恢复已注册 Tool / Skill。
+  从 .agent/catalog.json 恢复已注册 Tool / Skill。
 ```
 
 ### 3.3 `application/agent/` and `domain/agent/`
@@ -245,7 +245,7 @@ application/agent/confirmation.py
   ConfirmationPolicy：写入类动作的确认策略边界。
 
 application/agent/state_machine.py
-  AgentLoop：串联 route、resolve、act，作为 bkl chat 和 /chat/messages 的核心。
+  AgentLoop：串联 route、resolve、act，作为 ae chat 和 /chat/messages 的核心。
 ```
 
 `engine/app/agents/*` 是兼容导出，不再放主实现。
@@ -256,7 +256,7 @@ application/agent/state_machine.py
 自然语言 -> Skill Router -> Input Resolver -> SkillEngine.run_skill
 scene_id -> skill_id + defaults -> SkillEngine.run_skill
 缺少 required input 字段时返回 needs_input
-bkl chat --once
+ae chat --once
 POST /chat/messages
 ```
 
@@ -278,7 +278,7 @@ core/schemas.py
   兼容旧 import path 的 schema re-export；canonical schema 已迁到 domain。
 
 core/config.py
-  bkl.yaml + .env 配置加载。
+  agent.yaml + .env 配置加载。
 
 core/errors.py
   结构化错误基类。
@@ -301,7 +301,7 @@ EngineError
 UsageSummary
 ModelProfileConfig
 EngineConfig
-BklEngineError
+AgentEngineError
 ```
 
 Canonical schema 归属：
@@ -326,7 +326,7 @@ Skill 包加载、注册、运行。
 
 ```text
 infrastructure/package_loaders/skill_loader.py
-  读取标准 Skill 包：SKILL.md + bkl.skill.json + schema。
+  读取标准 Skill 包：SKILL.md + agent.skill.json + schema。
 
 infrastructure/repositories/skill_registry.py
   内存 Skill Registry adapter。
@@ -444,7 +444,7 @@ AnthropicProvider
 当前模型选择逻辑：
 
 ```text
-bkl.yaml 里 models.active_profile
+agent.yaml 里 models.active_profile
   -> ModelRouter 选择对应 provider
   -> Skill 的 model.profile 可覆盖默认 profile
 ```
@@ -458,7 +458,7 @@ infrastructure/persistence/artifact_store.py
   本地 Artifact 存储。
 
 infrastructure/persistence/catalog_store.py
-  .bkl/catalog.json 持久化 Tool / Skill 注册表。
+  .agent/catalog.json 持久化 Tool / Skill 注册表。
 
 infrastructure/persistence/run_store.py
   内存 Run Store。
@@ -563,22 +563,22 @@ interfaces/cli/run_commands.py
   后续拆分命令的占位文件。
 ```
 
-`engine/app/cli/main.py` 当前是兼容入口，`pyproject.toml` 的 `bkl` console script 已指向 `interfaces/cli/main.py`。
+`engine/app/cli/main.py` 当前是兼容入口，`pyproject.toml` 的 `ae` console script 已指向 `interfaces/cli/main.py`。
 
 当前 CLI：
 
 ```text
-bkl --version
-bkl init
-bkl serve
-bkl tool register
-bkl tool list
-bkl tool test
-bkl skill register
-bkl skill list
-bkl skill run
-bkl run list
-bkl trace show
+ae --version
+ae init
+ae serve
+ae tool register
+ae tool list
+ae tool test
+ae skill register
+ae skill list
+ae skill run
+ae run list
+ae trace show
 ```
 
 为什么 `main.py` 比较大：
@@ -623,14 +623,14 @@ engine/resources/inputs/subtitle_input.json
 ```text
 engine/resources/skills/talking-video/
   SKILL.md
-  bkl.skill.json
+  agent.skill.json
   schemas/input.schema.json
   schemas/output.schema.json
   examples/examples.json
 
 engine/resources/skills/wangbudong-experiment/
   SKILL.md
-  bkl.skill.json
+  agent.skill.json
   schemas/input.schema.json
   schemas/output.schema.json
   examples/examples.json
@@ -670,7 +670,7 @@ test_skill_runtime.py
   Skill Runtime 主循环。
 
 test_model_config.py
-  bkl.yaml + .env 模型配置。
+  agent.yaml + .env 模型配置。
 
 test_model_providers.py
   OpenAI-compatible / Anthropic-compatible provider 请求和解析。
@@ -685,7 +685,7 @@ test_stores.py
   Artifact Store / Trace Store。
 
 test_catalog_store.py
-  .bkl/catalog.json 持久化。
+  .agent/catalog.json 持久化。
 
 test_api_cli.py
   CLI/API 端到端基础链路。

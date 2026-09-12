@@ -1,6 +1,6 @@
-# BKL Usage Guide
+# Agent Engine Usage Guide
 
-这份文档面向直接使用 `bkl` CLI、SDK 和网关的用户。开发者验证命令仍以 README 和 `pyproject.toml` 为准。
+这份文档面向直接使用 `ae` CLI、SDK 和网关的用户。开发者验证命令仍以 README 和 `pyproject.toml` 为准。
 
 ## 1. 安装与升级
 
@@ -13,10 +13,10 @@ uv tool install --force --upgrade .
 这条命令同时用于首次安装和后续升级。安装后检查版本：
 
 ```bash
-bkl --version
+ae --version
 ```
 
-如果终端找不到 `bkl`：
+如果终端找不到 `ae`：
 
 ```bash
 uv tool update-shell
@@ -26,10 +26,10 @@ uv tool update-shell
 
 ## 2. 初始化模型配置
 
-本地 mock 示例不需要真实密钥。要接入真实 OpenAI-compatible 模型，可以生成 `bkl.yaml` 和 `.env`：
+本地 mock 示例不需要真实密钥。要接入真实 OpenAI-compatible 模型，可以生成 `agent.yaml` 和 `.env`：
 
 ```bash
-bkl init \
+ae init \
   --protocol openai-compatible \
   --profile xfyun_openai \
   --base-url https://maas-coding-api.cn-huabei-1.xf-yun.com/v2 \
@@ -37,10 +37,10 @@ bkl init \
   --api-key "你的密钥"
 ```
 
-如果当前目录已经有 `bkl.yaml`，`bkl init` 会拒绝覆盖。确认要替换现有配置时加 `--force`：
+如果当前目录已经有 `agent.yaml`，`ae init` 会拒绝覆盖。确认要替换现有配置时加 `--force`：
 
 ```bash
-bkl init \
+ae init \
   --protocol openai-compatible \
   --profile xfyun_openai \
   --base-url https://maas-coding-api.cn-huabei-1.xf-yun.com/v2 \
@@ -52,13 +52,13 @@ bkl init \
 如果只是想保留现有配置并创建另一份配置文件，使用 `--config` 和 `--env-file`：
 
 ```bash
-bkl init \
+ae init \
   --protocol openai-compatible \
   --profile xfyun_openai \
   --base-url https://maas-coding-api.cn-huabei-1.xf-yun.com/v2 \
   --model astron-code-latest \
   --api-key "你的密钥" \
-  --config bkl.xfyun.yaml \
+  --config agent.xfyun.yaml \
   --env-file .env.xfyun
 ```
 
@@ -71,13 +71,13 @@ bkl init \
 测试 CLI：
 
 ```bash
-bkl --version
+ae --version
 ```
 
 测试 Python Tool：
 
 ```bash
-bkl tool test \
+ae tool test \
   engine/resources/tools/subtitle_generate_srt \
   engine/resources/inputs/subtitle_input.json \
   --output json
@@ -86,7 +86,7 @@ bkl tool test \
 运行口播视频 Skill：
 
 ```bash
-bkl skill run \
+ae skill run \
   talking-video \
   engine/resources/inputs/talking-video-input.json \
   --skills-dir engine/resources/skills \
@@ -100,12 +100,12 @@ bkl skill run \
 - `trace_summary`：执行过程摘要，例如模型调用次数、工具调用次数、工具成功/失败次数。
 - `artifacts`：本次 run 记录的文件产物。普通 Skill 会把最终输出保存为 `data/artifacts/<run_id>/<skill-id>-output.json`，路径会出现在 `artifacts[0].uri`。
 
-如果看到 `Mock script for ...`，说明当前使用的是 mock 模型配置。这是本地 smoke test 的预期结果，不是调用真实大模型。要生成真实内容，需要用 `bkl init` 配置真实模型 profile，并在运行时传入 `--config bkl.yaml`。
+如果看到 `Mock script for ...`，说明当前使用的是 mock 模型配置。这是本地 smoke test 的预期结果，不是调用真实大模型。要生成真实内容，需要用 `ae init` 配置真实模型 profile，并在运行时传入 `--config agent.yaml`。
 
 运行内容视频生产工作流：
 
 ```bash
-bkl skill run \
+ae skill run \
   content-video-workflow \
   engine/resources/inputs/content-video-workflow-input.json \
   --skills-dir engine/resources/skills \
@@ -120,7 +120,7 @@ bkl skill run \
 一次性自然语言调用：
 
 ```bash
-bkl chat \
+ae chat \
   --once "帮我生成60秒小红书口播视频，主题是程序员护眼台灯" \
   --skills-dir engine/resources/skills \
   --tools-dir engine/resources/tools \
@@ -134,19 +134,19 @@ bkl chat \
 如果你要把一句内容直接走完整内容视频工作流，例如“介绍 openspec”，并只看分镜和生成提示词：
 
 ```bash
-bkl chat \
+ae chat \
   --once "介绍openspec" \
   --skill content-video-workflow \
   --skills-dir engine/resources/skills \
   --tools-dir engine/resources/tools \
-  --config bkl.yaml \
+  --config agent.yaml \
   --view prompts \
   --output json
 ```
 
 关键点：
 
-- `--config bkl.yaml`：使用真实模型配置；不加这个参数时，CLI 默认使用 mock 测试模型。
+- `--config agent.yaml`：使用真实模型配置；不加这个参数时，CLI 默认使用 mock 测试模型。
 - `--skill content-video-workflow`：强制走完整工作流，而不是只跑单个 `talking-video` Skill。
 - `--view prompts`：只输出 `storyboard` 和 `render_prompt_pack`，适合直接拿分镜提示词。
 - 只输入一句 topic 时，默认 `platform=xiaohongshu`、`duration_seconds=60`。
@@ -156,12 +156,12 @@ bkl chat \
 如果你想看 workflow 执行了哪些步骤、每一步的子 run，以及模型/工具调用摘要：
 
 ```bash
-bkl chat \
+ae chat \
   --once "介绍openspec" \
   --skill content-video-workflow \
   --skills-dir engine/resources/skills \
   --tools-dir engine/resources/tools \
-  --config bkl.yaml \
+  --config agent.yaml \
   --view trace \
   --output json
 ```
@@ -177,7 +177,7 @@ bkl chat \
 指定 Skill 调用：
 
 ```bash
-bkl chat \
+ae chat \
   --once "主题是程序员护眼台灯" \
   --skill talking-video \
   --input engine/resources/inputs/talking-video-input.json \
@@ -191,16 +191,16 @@ bkl chat \
 启动 HTTP/SSE/WebSocket 网关：
 
 ```bash
-bkl gateway \
+ae gateway \
   --host 127.0.0.1 \
   --port 8000 \
-  --config bkl.yaml
+  --config agent.yaml
 ```
 
 如果只需要普通 HTTP 服务，也可以使用：
 
 ```bash
-bkl serve --host 127.0.0.1 --port 8000 --config bkl.yaml
+ae serve --host 127.0.0.1 --port 8000 --config agent.yaml
 ```
 
 ## 6. 注册 Tool 和 Skill

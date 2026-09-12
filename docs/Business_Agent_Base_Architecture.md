@@ -1,14 +1,14 @@
-# BKL Business Agent Base Architecture
+# Agent Engine Business Agent Base Architecture
 
 Status: proposed target architecture for the next foundation phase. Current code implements a v0.1 vertical slice; this document defines the architecture it should evolve toward.
 
-本文定义 BKL 的长期目标：先打造一个可复用的业务智能体基座，再在 UI 层包装成本地软件、云端 SaaS、私有部署和具体业务产品。
+本文定义 Agent Engine 的长期目标：先打造一个可复用的业务智能体基座，再在 UI 层包装成本地软件、云端 SaaS、私有部署和具体业务产品。
 
 ## 1. Positioning
 
-BKL 的目标不是做通用代码编辑 Agent，也不是只做一个单一 Skill Runner。
+Agent Engine 的目标不是做通用代码编辑 Agent，也不是只做一个单一 Skill Runner。
 
-BKL 应该是：
+Agent Engine 应该是：
 
 ```text
 Business Agent Base
@@ -28,7 +28,7 @@ Engine = 运行时、权限、状态、追踪、记忆、产物和模型调用�
 UI/Product = 本地软件、SaaS、私有部署等产品包装
 ```
 
-BKL 不应该把业务流程硬编码进 Core Engine。业务能力通过 Skill 安装或开发，业务系统通过 Tool / Connector 接入，产品形态通过 HTTP / SDK / CLI / Desktop 调用同一套 Engine。
+Agent Engine 不应该把业务流程硬编码进 Core Engine。业务能力通过 Skill 安装或开发，业务系统通过 Tool / Connector 接入，产品形态通过 HTTP / SDK / CLI / Desktop 调用同一套 Engine。
 
 ## 2. Architecture Principles
 
@@ -52,7 +52,7 @@ engine/app/engine.py
   SkillEngine facade，统一 CLI/API/SDK 的运行入口。
 
 engine/app/application/skill/ and engine/app/application/execution/
-  Skill registry / runtime，支持 SKILL.md + bkl.skill.json 的执行契约。
+  Skill registry / runtime，支持 SKILL.md + agent.skill.json 的执行契约。
 
 engine/app/application/tool/
   Tool registry / executor，支持 python 和 api tool 的受控执行入口。
@@ -165,7 +165,7 @@ SkillDependency
 
 ```text
 加载标准 SKILL.md。
-加载 BKL runtime config。
+加载 Agent Engine runtime config。
 校验 input/output schema。
 管理 Skill 的 allowed tools、limits、model profile。
 支持安装公开 Skill、禁用、升级、版本锁定和信任策略。
@@ -604,7 +604,7 @@ Trace 不是只给开发者看的日志，它是未来 UI 调用链、失败诊�
 Discover
   -> Download / Clone
   -> Verify manifest
-  -> Validate SKILL.md and bkl.skill.json
+  -> Validate SKILL.md and agent.skill.json
   -> Validate schemas
   -> Resolve Tool dependencies
   -> Show permissions
@@ -636,7 +636,7 @@ UI 层应该是 Engine 的客户，不是第二套 Engine。
 
 ```text
 Desktop shell
-  -> starts local bkl serve
+  -> starts local ae serve
   -> local UI calls HTTP / SDK
   -> local filesystem and user-owned keys
 ```
@@ -645,7 +645,7 @@ Desktop shell
 
 ```text
 Web app
-  -> calls hosted BKL server
+  -> calls hosted Agent Engine server
   -> tenant/user auth
   -> managed model keys or user keys
   -> durable DB and object storage
@@ -655,7 +655,7 @@ Web app
 
 ```text
 Customer server
-  -> deployed BKL server
+  -> deployed Agent Engine server
   -> customer credential store
   -> internal connectors and private knowledge base
 ```

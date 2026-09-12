@@ -11,7 +11,7 @@ description: Use when running the content-video planning chain from idea to rend
 想法 -> 内容需求 -> 钩子 -> 风格规范 -> 脚本 -> 分段 -> 分镜 -> 渲染提示词
 ```
 
-本 Skill 不直接调用模型生成内容，而是通过 `bkl.skill.json` 中的 `workflow.steps` 顺序运行多个子 Skill。
+本 Skill 不直接调用模型生成内容，而是通过 `agent.skill.json` 中的 `workflow.steps` 顺序运行多个子 Skill。
 
 最终输出必须包含：
 

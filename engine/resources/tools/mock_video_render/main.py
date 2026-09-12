@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 def run(input_data: dict) -> dict:
-    artifact_dir = Path(os.environ["BKL_ARTIFACT_DIR"]).resolve()
+    artifact_dir = Path(os.environ["AGENT_ARTIFACT_DIR"]).resolve()
     artifact_dir.mkdir(parents=True, exist_ok=True)
 
     prompts = input_data.get("render_prompt_pack", {}).get("prompts", [])
@@ -29,7 +29,7 @@ def run(input_data: dict) -> dict:
 
     video_path = artifact_dir / "video-draft.mp4"
     manifest_path = artifact_dir / "render-manifest.json"
-    render_job_id = f"render_{os.environ.get('BKL_TOOL_CALL_ID', 'mock')}"
+    render_job_id = f"render_{os.environ.get('AGENT_TOOL_CALL_ID', 'mock')}"
 
     manifest = {
         "render_job_id": render_job_id,

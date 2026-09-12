@@ -7,7 +7,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field, ValidationError
 
-from app.domain.errors import BklEngineError
+from app.domain.errors import AgentEngineError
 from app.domain.policy import (
     PolicyEffect,
     ToolApprovalRecord,
@@ -58,7 +58,7 @@ class InMemoryPolicyStore:
     def get_tool_rule(self, rule_id: str) -> ToolPolicyRule:
         rule = self._tool_rules.get(rule_id)
         if rule is None:
-            raise BklEngineError("POLICY_RULE_NOT_FOUND", f"Policy rule not found: {rule_id}")
+            raise AgentEngineError("POLICY_RULE_NOT_FOUND", f"Policy rule not found: {rule_id}")
         return rule
 
     def list_tool_rules(
@@ -115,7 +115,7 @@ class InMemoryPolicyStore:
     def get_tool_approval(self, approval_id: str) -> ToolApprovalRecord:
         approval = self._tool_approvals.get(approval_id)
         if approval is None:
-            raise BklEngineError(
+            raise AgentEngineError(
                 "TOOL_APPROVAL_NOT_FOUND",
                 f"Tool approval not found: {approval_id}",
             )
@@ -276,12 +276,12 @@ class JsonPolicyStore(InMemoryPolicyStore):
             raw = json.loads(self.path.read_text(encoding="utf-8"))
             document = PolicyDocument.model_validate(raw)
         except json.JSONDecodeError as exc:
-            raise BklEngineError(
+            raise AgentEngineError(
                 "POLICY_STORE_INVALID",
                 f"Invalid policy store JSON: {self.path}",
             ) from exc
         except ValidationError as exc:
-            raise BklEngineError(
+            raise AgentEngineError(
                 "POLICY_STORE_INVALID",
                 f"Invalid policy store shape: {self.path}",
             ) from exc

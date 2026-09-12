@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from app.domain.errors import BklEngineError
+from app.domain.errors import AgentEngineError
 from app.domain.skill import Skill
 from app.infrastructure.package_loaders.skill_loader import load_skill
 
@@ -21,9 +21,9 @@ class InMemorySkillRegistry:
     def get_skill(self, skill_id: str) -> Skill:
         skill = self._skills.get(skill_id)
         if skill is None:
-            raise BklEngineError("SKILL_NOT_FOUND", f"Skill not found: {skill_id}")
+            raise AgentEngineError("SKILL_NOT_FOUND", f"Skill not found: {skill_id}")
         if not skill.enabled:
-            raise BklEngineError("SKILL_DISABLED", f"Skill is disabled: {skill_id}")
+            raise AgentEngineError("SKILL_DISABLED", f"Skill is disabled: {skill_id}")
         return skill
 
     def list_skills(self) -> list[Skill]:

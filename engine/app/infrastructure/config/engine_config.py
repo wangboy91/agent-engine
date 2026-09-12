@@ -8,7 +8,7 @@ from typing import Any, Literal
 import yaml
 from pydantic import BaseModel, Field
 
-from app.domain.errors import BklEngineError
+from app.domain.errors import AgentEngineError
 
 ModelProtocol = Literal["mock", "openai-compatible", "anthropic"]
 
@@ -38,7 +38,7 @@ class EngineConfig(BaseModel):
     models: ModelSettings = Field(default_factory=ModelSettings)
 
 
-def load_engine_config(path: str | Path = "bkl.yaml") -> EngineConfig:
+def load_engine_config(path: str | Path = "agent.yaml") -> EngineConfig:
     config_path = Path(path)
     _load_dotenv(config_path.parent / ".env")
     if not config_path.exists():
@@ -48,7 +48,7 @@ def load_engine_config(path: str | Path = "bkl.yaml") -> EngineConfig:
     if raw is None:
         return EngineConfig()
     if not isinstance(raw, dict):
-        raise BklEngineError("CONFIG_INVALID", f"Config must be a YAML object: {config_path}")
+        raise AgentEngineError("CONFIG_INVALID", f"Config must be a YAML object: {config_path}")
 
     resolved = _resolve_env(raw)
     return EngineConfig.model_validate(resolved)
@@ -92,7 +92,7 @@ def _resolve_env_string(value: str) -> str:
         env_name = match.group(1)
         env_value = os.environ.get(env_name)
         if env_value is None:
-            raise BklEngineError("CONFIG_INVALID", f"Missing environment variable: {env_name}")
+            raise AgentEngineError("CONFIG_INVALID", f"Missing environment variable: {env_name}")
         return env_value
 
     return pattern.sub(replace, value)

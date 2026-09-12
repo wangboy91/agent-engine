@@ -1,1 +1,1 @@
-"""Domain layer primitives for the BKL business agent base."""
+"""Domain layer primitives for the Agent Engine business agent base."""

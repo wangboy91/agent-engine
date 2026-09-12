@@ -3,7 +3,7 @@
 from pathlib import Path
 from uuid import uuid4
 
-from app.domain.errors import BklEngineError
+from app.domain.errors import AgentEngineError
 from app.domain.execution import Artifact, ArtifactType
 
 
@@ -64,7 +64,7 @@ class LocalArtifactStore:
     def get(self, artifact_id: str) -> Artifact:
         artifact = self._artifacts.get(artifact_id)
         if artifact is None:
-            raise BklEngineError("ARTIFACT_NOT_FOUND", f"Artifact not found: {artifact_id}")
+            raise AgentEngineError("ARTIFACT_NOT_FOUND", f"Artifact not found: {artifact_id}")
         return artifact
 
     def read_text(self, artifact_id: str) -> str:

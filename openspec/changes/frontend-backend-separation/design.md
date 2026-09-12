@@ -6,7 +6,7 @@
 
 - 内核(`engine/`):Skill/Tool 运行时、模型网关、存储、治理。只暴露 HTTP API
   (REST + SSE/WebSocket),契约稳定、版本化。
-- 前端(`web/`):全部界面。只通过公开 API 与内核通信,禁止 `import bkl_engine`。
+- 前端(`web/`):全部界面。只通过公开 API 与内核通信,禁止 `import app`。
 
 ## 2. 待定决策(实施前必须定案)
 
@@ -23,7 +23,7 @@
 1. 冻结内嵌控制台功能(不再新增能力)。
 2. `web/` 项目重建现有控制台的全部只读能力(run/trace/artifact 查看等)。
 3. 切换默认入口,`/ui` 指向新前端。
-4. 移除 `engine/bkl_engine/interfaces/http/static/runtime-console.html` 及其挂载逻辑。
+4. 移除 `engine/app/interfaces/http/static/runtime-console.html` 及其挂载逻辑。
 
 ## 4. 风险
 

@@ -8,7 +8,7 @@ from typing import Any
 
 import httpx
 
-from app.domain.errors import BklEngineError
+from app.domain.errors import AgentEngineError
 from app.domain.model import ModelResponse, ModelUsage, ToolCallRequest
 from app.infrastructure.config.engine_config import ModelProfileConfig
 
@@ -31,7 +31,7 @@ class AnthropicProvider:
     ) -> ModelResponse:
         del profile, stream_callback
         if self.config.base_url is None:
-            raise BklEngineError("CONFIG_INVALID", "Anthropic base_url is required")
+            raise AgentEngineError("CONFIG_INVALID", "Anthropic base_url is required")
 
         try:
             response = await self.client.post(
@@ -46,7 +46,7 @@ class AnthropicProvider:
             )
             response.raise_for_status()
         except httpx.TimeoutException as exc:
-            raise BklEngineError(
+            raise AgentEngineError(
                 "MODEL_PROVIDER_TIMEOUT",
                 f"Anthropic model request timed out after {self.config.timeout_seconds}s",
                 {
@@ -63,7 +63,7 @@ class AnthropicProvider:
             }
             if isinstance(exc, httpx.HTTPStatusError):
                 details["status_code"] = exc.response.status_code
-            raise BklEngineError(
+            raise AgentEngineError(
                 "MODEL_PROVIDER_ERROR",
                 str(exc) or exc.__class__.__name__,
                 details,
@@ -71,7 +71,7 @@ class AnthropicProvider:
             ) from exc
         payload = response.json()
         if not isinstance(payload, dict):
-            raise BklEngineError("MODEL_PROVIDER_ERROR", "Anthropic response is invalid")
+            raise AgentEngineError("MODEL_PROVIDER_ERROR", "Anthropic response is invalid")
         return self._parse_response(payload)
 
     def _headers(self) -> dict[str, str]:
@@ -87,10 +87,10 @@ class AnthropicProvider:
 
     def _api_key(self) -> str:
         if self.config.api_key_env is None:
-            raise BklEngineError("CONFIG_INVALID", "api_key_env is required")
+            raise AgentEngineError("CONFIG_INVALID", "api_key_env is required")
         api_key = os.environ.get(self.config.api_key_env)
         if api_key is None:
-            raise BklEngineError(
+            raise AgentEngineError(
                 "SECRET_NOT_AVAILABLE",
                 f"Missing model credential: {self.config.api_key_env}",
             )

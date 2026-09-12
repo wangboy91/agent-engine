@@ -1,8 +1,8 @@
-# BKL Workspace Agent Runtime Roadmap
+# Agent Engine Workspace Agent Runtime Roadmap
 
 ## Goal
 
-BKL Skill Engine is a business Skill runtime. The product shape is a multi-tenant
+Agent Engine is a business Skill runtime. The product shape is a multi-tenant
 workspace where different identities manage and use different business Skills
 through a chat-like UI.
 
@@ -46,9 +46,9 @@ through a chat-like UI.
   Tool arguments. Secret APIs return metadata only.
 - Agent sessions can persist messages, turns, run ids, workspace, and identity
   metadata through the local JSON session store.
-- `SkillEngine.load()` uses `.bkl/workspaces.json` and `.bkl/sessions.json` by
-  default, alongside `.bkl/catalog.json`, `.bkl/runs.json`, and
-  `.bkl/traces.json`, `.bkl/policies.json`, and `.bkl/secrets.json` for local
+- `SkillEngine.load()` uses `.agent/workspaces.json` and `.agent/sessions.json` by
+  default, alongside `.agent/catalog.json`, `.agent/runs.json`, and
+  `.agent/traces.json`, `.agent/policies.json`, and `.agent/secrets.json` for local
   runtime state.
 
 ## Target Architecture
@@ -203,5 +203,5 @@ Chat requests can scope execution:
 When both `workspace_id` and `identity_id` are present, routing is constrained
 to enabled Skills installed in that workspace and bound to that identity. The
 early product shape intentionally avoids a product-level global Skill catalog;
-`.bkl/catalog.json` remains the local runtime cache of loadable Tool and Skill
-packages, while `.bkl/workspaces.json` owns the business-facing Skill catalog.
+`.agent/catalog.json` remains the local runtime cache of loadable Tool and Skill
+packages, while `.agent/workspaces.json` owns the business-facing Skill catalog.

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field, ValidationError
 
-from app.domain.errors import BklEngineError
+from app.domain.errors import AgentEngineError
 from app.domain.skill import Skill
 from app.domain.tool import Tool
 
@@ -37,9 +37,11 @@ class JsonCatalogStore:
             raw = json.loads(self.path.read_text(encoding="utf-8"))
             return _migrate_legacy_resource_paths(CatalogDocument.model_validate(raw))
         except json.JSONDecodeError as exc:
-            raise BklEngineError("CATALOG_INVALID", f"Invalid catalog JSON: {self.path}") from exc
+            raise AgentEngineError("CATALOG_INVALID", f"Invalid catalog JSON: {self.path}") from exc
         except ValidationError as exc:
-            raise BklEngineError("CATALOG_INVALID", f"Invalid catalog shape: {self.path}") from exc
+            raise AgentEngineError(
+                "CATALOG_INVALID", f"Invalid catalog shape: {self.path}"
+            ) from exc
 
     def save(self, catalog: CatalogDocument) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -75,7 +77,7 @@ class JsonCatalogStore:
 
 def _package_path(path: Path | None, kind: str, package_id: str) -> str:
     if path is None:
-        raise BklEngineError("CATALOG_INVALID", f"{kind} package path missing: {package_id}")
+        raise AgentEngineError("CATALOG_INVALID", f"{kind} package path missing: {package_id}")
     return path.as_posix()
 
 

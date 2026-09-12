@@ -15,7 +15,7 @@ OPERATIONS_FILE = "04-\u53d1\u5e03\u8fd0\u8425\u5361.md"
 
 def main() -> None:
     payload = json.loads(sys.stdin.buffer.read().decode("utf-8"))
-    artifact_dir = Path(os.environ["BKL_ARTIFACT_DIR"])
+    artifact_dir = Path(os.environ["AGENT_ARTIFACT_DIR"])
     artifact_dir.mkdir(parents=True, exist_ok=True)
 
     title = str(payload["experiment_title"])

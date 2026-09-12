@@ -23,7 +23,7 @@ description: Use when generating a structured talking-video draft from a topic, 
 
 ## 可用工具
 
-你只能调用 `bkl.skill.json` 的 `tools.allow` 中声明的工具。
+你只能调用 `agent.skill.json` 的 `tools.allow` 中声明的工具。
 
 当前示例只允许调用：
 

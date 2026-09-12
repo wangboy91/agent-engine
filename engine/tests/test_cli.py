@@ -15,11 +15,11 @@ def test_cli_prints_version() -> None:
     result = CliRunner().invoke(app, ["--version"])
 
     assert result.exit_code == 0
-    assert "bkl-skill-engine 0.1.0" in result.stdout
+    assert "agent-engine 0.1.0" in result.stdout
 
 
 def test_cli_init_writes_model_config_and_env_without_leaking_secret(tmp_path) -> None:  # type: ignore[no-untyped-def]
-    config_path = tmp_path / "bkl.yaml"
+    config_path = tmp_path / "agent.yaml"
     env_path = tmp_path / ".env"
 
     result = CliRunner().invoke(
@@ -59,7 +59,7 @@ def test_cli_init_writes_model_config_and_env_without_leaking_secret(tmp_path) -
 
 
 def test_cli_init_refuses_to_overwrite_config_without_force(tmp_path) -> None:  # type: ignore[no-untyped-def]
-    config_path = tmp_path / "bkl.yaml"
+    config_path = tmp_path / "agent.yaml"
     config_path.write_text("existing: true\n", encoding="utf-8")
 
     result = CliRunner().invoke(
@@ -78,7 +78,7 @@ def test_cli_init_refuses_to_overwrite_config_without_force(tmp_path) -> None:  
 
 
 def test_cli_serve_starts_fastapi_app_with_config(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
-    config_path = tmp_path / "bkl.yaml"
+    config_path = tmp_path / "agent.yaml"
     config_path.write_text(
         "\n".join(
             [
@@ -114,7 +114,7 @@ def test_cli_serve_starts_fastapi_app_with_config(monkeypatch, tmp_path) -> None
     )
 
     assert result.exit_code == 0
-    assert captured["api"].title == "BKL Skill Engine"
+    assert captured["api"].title == "Agent Engine"
     assert captured["kwargs"]["host"] == "0.0.0.0"
     assert captured["kwargs"]["port"] == 9000
 
@@ -145,14 +145,14 @@ def test_cli_gateway_starts_fastapi_app_with_stream_transports(
     )
 
     assert result.exit_code == 0
-    assert captured["api"].title == "BKL Skill Engine"
+    assert captured["api"].title == "Agent Engine"
     assert captured["kwargs"]["host"] == "0.0.0.0"
     assert captured["kwargs"]["port"] == 9100
 
 
 def test_cli_register_commands_write_catalog(tmp_path) -> None:  # type: ignore[no-untyped-def]
     config_path = _write_mock_config(tmp_path)
-    catalog_path = tmp_path / ".bkl" / "catalog.json"
+    catalog_path = tmp_path / ".agent" / "catalog.json"
 
     tool_result = CliRunner().invoke(
         app,
@@ -191,7 +191,7 @@ def test_cli_register_commands_write_catalog(tmp_path) -> None:  # type: ignore[
 
 def test_cli_workspace_scan_registers_resources_for_identity(tmp_path) -> None:  # type: ignore[no-untyped-def]
     config_path = _write_mock_config(tmp_path)
-    catalog_path = tmp_path / ".bkl" / "catalog.json"
+    catalog_path = tmp_path / ".agent" / "catalog.json"
 
     result = CliRunner().invoke(
         app,
@@ -223,7 +223,7 @@ def test_cli_workspace_scan_registers_resources_for_identity(tmp_path) -> None: 
 
 def test_cli_workspace_registers_single_skill_and_tool_for_identity(tmp_path) -> None:  # type: ignore[no-untyped-def]
     config_path = _write_mock_config(tmp_path)
-    catalog_path = tmp_path / ".bkl" / "catalog.json"
+    catalog_path = tmp_path / ".agent" / "catalog.json"
 
     skill_result = CliRunner().invoke(
         app,
@@ -265,7 +265,7 @@ def test_cli_workspace_registers_single_skill_and_tool_for_identity(tmp_path) ->
 
 
 def _write_mock_config(tmp_path):  # type: ignore[no-untyped-def]
-    config_path = tmp_path / "bkl.yaml"
+    config_path = tmp_path / "agent.yaml"
     config_path.write_text(
         "\n".join(
             [

@@ -53,7 +53,7 @@ def test_standard_skill_md_requires_frontmatter(tmp_path: Path) -> None:
         load_skill(skill_dir)
 
 
-def test_standard_skill_without_bkl_sidecar_loads_with_default_contract(tmp_path: Path) -> None:
+def test_standard_skill_without_agent_sidecar_loads_with_default_contract(tmp_path: Path) -> None:
     skill_dir = tmp_path / "missing_runtime_config"
     skill_dir.mkdir()
     (skill_dir / "SKILL.md").write_text(
@@ -79,18 +79,18 @@ def test_standard_skill_without_bkl_sidecar_loads_with_default_contract(tmp_path
     assert skill.output_schema["additionalProperties"] is True
 
 
-def test_standard_skill_rejects_bkl_frontmatter_extension(tmp_path: Path) -> None:
+def test_standard_skill_rejects_agent_frontmatter_extension(tmp_path: Path) -> None:
     skill_dir = _write_standard_skill(tmp_path)
     skill_md = skill_dir / "SKILL.md"
     skill_md.write_text(
         skill_md.read_text(encoding="utf-8").replace(
             "description: Use when testing standard SKILL.md parsing.\n---",
-            "description: Use when testing standard SKILL.md parsing.\nbkl:\n  id: bad\n---",
+            "description: Use when testing standard SKILL.md parsing.\nagent:\n  id: bad\n---",
         ),
         encoding="utf-8",
     )
 
-    with pytest.raises(SkillLoadError, match="bkl.skill.json"):
+    with pytest.raises(SkillLoadError, match="agent.skill.json"):
         load_skill(skill_dir)
 
 
@@ -196,7 +196,7 @@ def _write_standard_skill(
     )
     schemas_dir = skill_dir / "schemas"
     schemas_dir.mkdir()
-    (skill_dir / "bkl.skill.json").write_text(
+    (skill_dir / "agent.skill.json").write_text(
         "\n".join(
             [
                 "{",
@@ -222,7 +222,7 @@ def _write_standard_skill(
 
 def _write_direct_tool_skill(tmp_path: Path) -> Path:
     skill_dir = _write_standard_skill(tmp_path)
-    config_path = skill_dir / "bkl.skill.json"
+    config_path = skill_dir / "agent.skill.json"
     config_path.write_text(
         config_path.read_text(encoding="utf-8").replace(
             "  }\n}",

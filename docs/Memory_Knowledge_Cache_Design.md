@@ -1,8 +1,8 @@
-# BKL Memory, Knowledge, and Cache Design
+# Agent Engine Memory, Knowledge, and Cache Design
 
 Status: design draft before implementation.
 
-本文定义 BKL Skill Engine 后续如何增加“记忆、知识库、上下文缓存、检索注入”能力。目标不是把 BKL 变成一个大而全的向量知识库，而是在保持 Skill Engine 简洁可控的前提下，让 Agent 能够从本地 Markdown、历史会话、工作区知识和 Skill 规则中按需检索，并把命中的少量内容注入到模型提示词中。
+本文定义 Agent Engine 后续如何增加“记忆、知识库、上下文缓存、检索注入”能力。目标不是把 Agent Engine 变成一个大而全的向量知识库，而是在保持 Skill Engine 简洁可控的前提下，让 Agent 能够从本地 Markdown、历史会话、工作区知识和 Skill 规则中按需检索，并把命中的少量内容注入到模型提示词中。
 
 核心原则：
 
@@ -114,7 +114,7 @@ SOUL.md
 
 Hermes 的 Skill 是按需知识文档，遵循 progressive disclosure。Skill 可以从官方源、GitHub、`.well-known/skills/index.json`、第三方 marketplace 等安装。
 
-对 BKL 有价值的点不是 marketplace 本身，而是：
+对 Agent Engine 有价值的点不是 marketplace 本身，而是：
 
 ```text
 Skill 是可复用过程知识。
@@ -128,21 +128,21 @@ Skill 可以被安装、启用、禁用、审批。
 
 ---
 
-## 2. BKL 当前状态
+## 2. Agent Engine 当前状态
 
-BKL 当前已有：
+Agent Engine 当前已有：
 
 ```text
 engine/resources/skills/*/SKILL.md
-engine/resources/skills/*/bkl.skill.json
+engine/resources/skills/*/agent.skill.json
 engine/resources/skills/*/schemas/
 engine/resources/tools/*
 
-.bkl/catalog.json
-.bkl/workspaces.json
-.bkl/sessions.json
-.bkl/runs.json
-.bkl/traces.json
+.agent/catalog.json
+.agent/workspaces.json
+.agent/sessions.json
+.agent/runs.json
+.agent/traces.json
 
 data/artifacts/
 ```
@@ -172,9 +172,9 @@ Prompt cache 友好的上下文层级
 
 ---
 
-## 3. BKL 目标设计
+## 3. Agent Engine 目标设计
 
-BKL 应该采用“五层上下文”。
+Agent Engine 应该采用“五层上下文”。
 
 ```text
 Layer 1: Engine / Product Fixed Context
@@ -190,10 +190,10 @@ Layer 5: Session Search / Retrieval Results
 
 ## 4. Layer 1：固定系统上下文
 
-这部分是 BKL Engine 固定规则，例如：
+这部分是 Agent Engine Engine 固定规则，例如：
 
 ```text
-你是 BKL Skill Engine 的受控 Agent。
+你是 Agent Engine 的受控 Agent。
 你只能通过已注册 Skill 和 Tool 执行动作。
 所有输出必须符合 Skill schema。
 危险写操作必须确认。
@@ -214,10 +214,10 @@ Layer 5: Session Search / Retrieval Results
 
 ## 5. Layer 2：Workspace + Identity Memory
 
-BKL 应该增加工作区和身份级记忆：
+Agent Engine 应该增加工作区和身份级记忆：
 
 ```text
-.bkl/memory/
+.agent/memory/
   default_workspace/
     default_operator/
       MEMORY.md
@@ -262,8 +262,8 @@ session running:
 第一版可以只支持 API/CLI 显式写入：
 
 ```bash
-bkl memory add --target memory "当前项目默认使用 engine/resources/skills 作为技能目录"
-bkl memory add --target user "用户喜欢中文、直接、少废话的回答"
+ae memory add --target memory "当前项目默认使用 engine/resources/skills 作为技能目录"
+ae memory add --target user "用户喜欢中文、直接、少废话的回答"
 ```
 
 后续再支持 Agent 自动沉淀：
@@ -292,11 +292,11 @@ run completed
 
 ## 6. Layer 3：Project Context Files
 
-BKL 应该支持工作区内的上下文文件：
+Agent Engine 应该支持工作区内的上下文文件：
 
 ```text
-BKL.md
-.bkl.md
+Agent Engine.md
+.agent.md
 AGENTS.md
 CLAUDE.md
 ```
@@ -318,8 +318,8 @@ CLAUDE.md
 优先级建议：
 
 ```text
-BKL.md
-.bkl.md
+Agent Engine.md
+.agent.md
 AGENTS.md
 CLAUDE.md
 ```
@@ -399,7 +399,7 @@ chunk metadata：
 建议本地存储：
 
 ```text
-.bkl/knowledge/
+.agent/knowledge/
   index.sqlite
 ```
 
@@ -458,10 +458,10 @@ scan skill package
 
 ## 8. Layer 5：Session Search
 
-当前 BKL 使用 `.bkl/sessions.json`。后续应该增加 SQLite session store：
+当前 Agent Engine 使用 `.agent/sessions.json`。后续应该增加 SQLite session store：
 
 ```text
-.bkl/state.db
+.agent/state.db
 ```
 
 表结构：
@@ -603,13 +603,13 @@ user input:          dynamic
 
 ## 11. Cache Types
 
-BKL 后续应该有这些缓存：
+Agent Engine 后续应该有这些缓存：
 
 | 缓存 | 内容 | 存储 | 何时更新 |
 |---|---|---|---|
 | Skill Package Cache | SKILL.md, config, schema | 内存 + catalog | register/load |
-| Memory Snapshot | MEMORY.md / USER.md | `.bkl/memory` | session start |
-| Context File Cache | BKL.md / AGENTS.md | session memory | file path first seen |
+| Memory Snapshot | MEMORY.md / USER.md | `.agent/memory` | session start |
+| Context File Cache | Agent Engine.md / AGENTS.md | session memory | file path first seen |
 | Knowledge Index | Markdown chunks | SQLite FTS5 | scan/register/file hash changed |
 | Retrieval Cache | query -> chunk_ids | LRU/SQLite | query time |
 | Session Search Index | messages FTS | SQLite FTS5 | message write |
@@ -623,11 +623,11 @@ BKL 后续应该有这些缓存：
 ### 12.1 Memory
 
 ```bash
-bkl memory show
-bkl memory add --target memory "..."
-bkl memory add --target user "..."
-bkl memory remove --target memory --contains "..."
-bkl memory compact
+ae memory show
+ae memory add --target memory "..."
+ae memory add --target user "..."
+ae memory remove --target memory --contains "..."
+ae memory compact
 ```
 
 HTTP：
@@ -641,9 +641,9 @@ POST /workspaces/{workspace_id}/identities/{identity_id}/memory/compact
 ### 12.2 Knowledge
 
 ```bash
-bkl knowledge scan --workspace default_workspace --identity default_operator
-bkl knowledge search "openspec 小红书视频" --skill content-video-workflow
-bkl knowledge sources --skill content-video-workflow
+ae knowledge scan --workspace default_workspace --identity default_operator
+ae knowledge search "openspec 小红书视频" --skill content-video-workflow
+ae knowledge sources --skill content-video-workflow
 ```
 
 HTTP：
@@ -657,8 +657,8 @@ GET  /workspaces/{workspace_id}/knowledge/sources
 ### 12.3 Session Search
 
 ```bash
-bkl sessions search "openspec 视频脚本"
-bkl sessions show sess_xxx
+ae sessions search "openspec 视频脚本"
+ae sessions show sess_xxx
 ```
 
 HTTP：
@@ -699,7 +699,7 @@ GET /sessions/{session_id}
 本次命中知识：
 1. engine/resources/skills/content-video-workflow/knowledge/xhs-style.md > 开头结构
 2. engine/resources/skills/content-video-workflow/knowledge/openspec.md > 核心价值
-3. .bkl/memory/default_workspace/default_operator/MEMORY.md
+3. .agent/memory/default_workspace/default_operator/MEMORY.md
 ```
 
 ---
@@ -769,8 +769,8 @@ invisible unicode
 ### Phase 1: Memory Files
 
 - [ ] 新增 `MemoryStorePort`
-- [ ] 新增 `.bkl/memory/{workspace_id}/{identity_id}/MEMORY.md`
-- [ ] 新增 `.bkl/memory/{workspace_id}/{identity_id}/USER.md`
+- [ ] 新增 `.agent/memory/{workspace_id}/{identity_id}/MEMORY.md`
+- [ ] 新增 `.agent/memory/{workspace_id}/{identity_id}/USER.md`
 - [ ] session start 加载 frozen snapshot
 - [ ] 注入 SkillRuntime prompt
 - [ ] CLI/API 管理 memory
@@ -779,10 +779,10 @@ invisible unicode
 
 ### Phase 2: SQLite Session Store + FTS5
 
-- [ ] 新增 `.bkl/state.db`
+- [ ] 新增 `.agent/state.db`
 - [ ] 新增 sessions/messages/messages_fts
 - [ ] 保持 JSON store 兼容或做 migration
-- [ ] `bkl sessions search`
+- [ ] `ae sessions search`
 - [ ] `/sessions/search`
 
 ### Phase 3: Skill Knowledge Index
@@ -791,7 +791,7 @@ invisible unicode
 - [ ] Markdown chunker
 - [ ] SQLite FTS5 knowledge index
 - [ ] scan/register 时增量索引
-- [ ] `bkl knowledge search`
+- [ ] `ae knowledge search`
 - [ ] `/knowledge/search`
 
 ### Phase 4: Prompt Injector
@@ -804,7 +804,7 @@ invisible unicode
 
 ### Phase 5: Context Files
 
-- [ ] 支持 BKL.md / .bkl.md / AGENTS.md / CLAUDE.md
+- [ ] 支持 Agent Engine.md / .agent.md / AGENTS.md / CLAUDE.md
 - [ ] 启动时加载工作区根目录上下文
 - [ ] Tool path 触发渐进发现
 - [ ] 每目录每 session 只检查一次
@@ -834,20 +834,20 @@ invisible unicode
 
 ---
 
-## 18. BKL Recommended First Slice
+## 18. Agent Engine Recommended First Slice
 
 最小可落地版本：
 
 ```text
 1. Memory files:
-   .bkl/memory/{workspace_id}/{identity_id}/MEMORY.md
-   .bkl/memory/{workspace_id}/{identity_id}/USER.md
+   .agent/memory/{workspace_id}/{identity_id}/MEMORY.md
+   .agent/memory/{workspace_id}/{identity_id}/USER.md
 
 2. Skill knowledge:
    engine/resources/skills/<skill_id>/knowledge/*.md
 
 3. SQLite FTS:
-   .bkl/knowledge/index.sqlite
+   .agent/knowledge/index.sqlite
 
 4. Runtime:
    route skill

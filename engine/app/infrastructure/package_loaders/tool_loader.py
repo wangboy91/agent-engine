@@ -8,11 +8,11 @@ import yaml
 from pydantic import ValidationError
 
 from app.domain.common import JsonObject
-from app.domain.errors import BklEngineError
+from app.domain.errors import AgentEngineError
 from app.domain.tool import Tool, ToolPermissions, ToolRuntimeConfig
 
 
-class ToolLoadError(BklEngineError):
+class ToolLoadError(AgentEngineError):
     """Raised when a Tool package cannot be loaded or validated."""
 
     def __init__(self, message: str) -> None:
