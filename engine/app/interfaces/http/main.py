@@ -7,10 +7,9 @@ from pathlib import Path
 from typing import Any, Literal, cast
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException, WebSocket
-from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI, Header, HTTPException, WebSocket
 from pydantic import BaseModel, Field
-from starlette.responses import FileResponse, StreamingResponse
+from starlette.responses import StreamingResponse
 
 from app.application.agent import HandleAgentMessageCommand, HandleAgentMessageUseCase
 from app.application.skill import RunSkillCommand, RunSkillUseCase
@@ -19,8 +18,6 @@ from app.domain.errors import AgentEngineError
 from app.domain.execution import RunContext, TraceEvent
 from app.domain.policy import PolicyEffect, ToolApprovalStatus
 from app.engine import SkillEngine
-
-STATIC_DIR = Path(__file__).parent / "static"
 
 
 class RegisterPathRequest(BaseModel):
@@ -112,11 +109,6 @@ class ChatMessageRequest(BaseModel):
 def create_app(engine: SkillEngine | None = None) -> FastAPI:
     api = FastAPI(title="Agent Engine", version="0.1.0")
     api.state.engine = engine or SkillEngine.load()
-    api.mount("/ui/assets", StaticFiles(directory=STATIC_DIR), name="runtime-console-assets")
-
-    @api.get("/ui", include_in_schema=False)
-    def runtime_console() -> FileResponse:
-        return FileResponse(STATIC_DIR / "runtime-console.html")
 
     @api.get("/health")
     def health() -> dict[str, str]:
@@ -559,9 +551,32 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail=exc.message) from exc
 
     @api.post("/skills/{skill_id}/runs")
-    async def run_skill(skill_id: str, request: RunSkillRequest) -> dict[str, Any]:
+    async def run_skill(
+        skill_id: str,
+        request: RunSkillRequest,
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+        x_principal_id: str | None = Header(default=None, alias="X-Principal-Id"),
+        x_principal_type: str | None = Header(default=None, alias="X-Principal-Type"),
+        x_workspace_roles: str | None = Header(default=None, alias="X-Workspace-Roles"),
+        x_group_ids: str | None = Header(default=None, alias="X-Group-Ids"),
+    ) -> dict[str, Any]:
         try:
             context = RunContext.model_validate(request.context) if request.context else None
+            principal = None
+            if x_tenant_id and x_principal_id:
+                from app.application.platform.run_bridge import enrich_context_with_principal
+                from app.domain.platform import Principal
+
+                principal = Principal(
+                    tenant_id=x_tenant_id,
+                    principal_id=x_principal_id,
+                    principal_type=(x_principal_type or "user"),  # type: ignore[arg-type]
+                    workspace_roles=[
+                        p.strip() for p in (x_workspace_roles or "").split(",") if p.strip()
+                    ],
+                    group_ids=[p.strip() for p in (x_group_ids or "").split(",") if p.strip()],
+                )
+                context = enrich_context_with_principal(context, principal)
             run = await RunSkillUseCase(_engine(api)).execute(
                 RunSkillCommand(skill_id=skill_id, input=request.input, context=context)
             )
@@ -843,6 +858,10 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
             return _engine(api).artifact_store.get(artifact_id).model_dump(mode="json")
         except AgentEngineError as exc:
             raise HTTPException(status_code=404, detail=exc.message) from exc
+
+    from app.interfaces.http.api_v1 import router as api_v1_router
+
+    api.include_router(api_v1_router)
 
     return api
 

@@ -31,6 +31,25 @@ class InMemoryRunStore:
     def list_runs(self) -> list[RunResult]:
         return list(self._runs.values())
 
+    def list_for_owner(
+        self,
+        *,
+        owner_principal_id: str,
+        tenant_id: str | None = None,
+    ) -> list[RunResult]:
+        result: list[RunResult] = []
+        for run in self._runs.values():
+            ctx = run.context
+            if ctx is None:
+                continue
+            owner = ctx.owner_principal_id or ctx.user_id
+            if owner != owner_principal_id:
+                continue
+            if tenant_id is not None and ctx.tenant_id not in (None, tenant_id):
+                continue
+            result.append(run)
+        return result
+
 
 class JsonRunStore(InMemoryRunStore):
     def __init__(self, path: str | Path) -> None:

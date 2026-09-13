@@ -84,6 +84,11 @@ class AgentSession(BaseModel):
     workspace_id: str | None = None
     identity_id: str | None = None
     user_id: str | None = None
+    # SaaS ownership fields (1.0.1). Immutable after create for user_id/owner.
+    tenant_id: str | None = None
+    tenant_workspace_id: str | None = None
+    owner_principal_id: str | None = None
+    identity_version_id: str | None = None
     messages: list[AgentMessage] = Field(default_factory=list)
     turns: list[AgentTurn] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

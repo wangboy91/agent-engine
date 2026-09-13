@@ -1,5 +1,7 @@
 # Agent Engine Project Structure
 
+> **文档状态**：历史追溯（部分路径已过时）。当前目录以根 [AGENTS.md](../AGENTS.md) 与 [INDEX.md](INDEX.md) 为准；代码根在 `engine/`。
+
 本文是当前代码目录导览，用来解释每个目录、文件、主要类的职责，以及哪些模块已经实现、哪些模块只是为后续版本预留边界。
 
 目标架构和未来 DDD 分层见 [Agent Engine Business Agent Base Architecture](Business_Agent_Base_Architecture.md)。

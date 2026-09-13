@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Agent Engine · 管理控制台原型 1.0.1-r2</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app" class="app">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="brand" aria-label="Agent Engine">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span class="brand-text">Agent Engine</span>
+          <span class="version-chip">1.0.1-r2</span>
+        </div>
+        <div class="scope-switchers">
+          <label class="sr-only" for="tenantSel">租户</label>
+          <select id="tenantSel" class="scope-select">
+            <option value="t-demo">演示租户 · Acme</option>
+            <option value="t-beta">试点租户 · Contoso</option>
+          </select>
+          <label class="sr-only" for="wsSel">工作空间</label>
+          <select id="wsSel" class="scope-select">
+            <option value="ws-content">内容生产工作区</option>
+            <option value="ws-ops">运营助手工作区</option>
+          </select>
+          <span class="env-chip">生产</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <label class="sr-only" for="roleSel">演示角色</label>
+        <select id="roleSel" class="scope-select role-select" title="切换演示角色（模拟 Principal）">
+          <option value="platform_admin">平台管理员</option>
+          <option value="tenant_admin">企业管理员</option>
+          <option value="ws_admin" selected>空间管理员</option>
+          <option value="developer">智能体开发者</option>
+          <option value="operator">业务运营</option>
+          <option value="auditor">审计员</option>
+          <option value="end_user">企业员工</option>
+        </select>
+        <label class="sr-only" for="globalSearch">全局搜索</label>
+        <input id="globalSearch" class="search-input" type="search" placeholder="搜索智能体、Skill、Run…" />
+        <button type="button" class="icon-btn" id="btnApprovals" title="待审批">
+          <span class="badge" id="approvalBadge">3</span>
+          审批
+        </button>
+        <div class="user-chip" title="当前 Principal">
+          <span class="avatar" id="userAvatar">赵</span>
+          <span class="user-meta">
+            <span class="user-name" id="userName">赵安</span>
+            <span class="user-role" id="userRole">空间管理员</span>
+          </span>
+        </div>
+      </div>
+    </header>
+
+    <div class="perm-banner" id="permBanner" hidden></div>
+
+    <div class="shell">
+      <nav class="sidenav" id="sidenav" aria-label="主导航"></nav>
+      <main class="main" id="main" tabindex="-1"></main>
+    </div>
+
+    <div class="toast-host" id="toastHost" aria-live="polite"></div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

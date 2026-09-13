@@ -43,28 +43,84 @@ class InMemoryAgentSessionStore:
         workspace_id: str | None = None,
         identity_id: str | None = None,
         user_id: str | None = None,
+        tenant_id: str | None = None,
+        tenant_workspace_id: str | None = None,
+        owner_principal_id: str | None = None,
+        identity_version_id: str | None = None,
     ) -> AgentSession:
         existing = self._sessions.get(session_id)
         if existing is not None:
             update: dict[str, object] = {"updated_at": datetime.now(UTC)}
+            # Owner fields are immutable after create (1.0.1 isolation).
             if workspace_id is not None:
                 update["workspace_id"] = workspace_id
             if identity_id is not None:
                 update["identity_id"] = identity_id
-            if user_id is not None:
-                update["user_id"] = user_id
             session = existing.model_copy(update=update)
             self._sessions[session_id] = session
             return session
 
+        owner = owner_principal_id or user_id
         session = AgentSession(
             session_id=session_id,
             workspace_id=workspace_id,
             identity_id=identity_id,
-            user_id=user_id,
+            user_id=user_id or owner,
+            tenant_id=tenant_id,
+            tenant_workspace_id=tenant_workspace_id,
+            owner_principal_id=owner,
+            identity_version_id=identity_version_id,
         )
         self._sessions[session_id] = session
         return session
+
+    def get_for_owner(
+        self,
+        session_id: str,
+        *,
+        tenant_id: str | None = None,
+        tenant_workspace_id: str | None = None,
+        owner_principal_id: str,
+    ) -> AgentSession:
+        session = self._sessions.get(session_id)
+        if session is None:
+            raise AgentEngineError("SESSION_NOT_FOUND", f"Session not found: {session_id}")
+        if tenant_id is not None and session.tenant_id not in (None, tenant_id):
+            raise AgentEngineError("SESSION_NOT_FOUND", f"Session not found: {session_id}")
+        if (
+            tenant_workspace_id is not None
+            and session.tenant_workspace_id not in (None, tenant_workspace_id)
+        ):
+            raise AgentEngineError("SESSION_NOT_FOUND", f"Session not found: {session_id}")
+        session_owner = session.owner_principal_id or session.user_id
+        if session_owner is not None and session_owner != owner_principal_id:
+            raise AgentEngineError("SESSION_NOT_FOUND", f"Session not found: {session_id}")
+        return session
+
+    def list_for_owner(
+        self,
+        *,
+        owner_principal_id: str,
+        tenant_id: str | None = None,
+        tenant_workspace_id: str | None = None,
+        identity_id: str | None = None,
+    ) -> list[AgentSession]:
+        sessions: list[AgentSession] = []
+        for session in self._sessions.values():
+            owner = session.owner_principal_id or session.user_id
+            if owner != owner_principal_id:
+                continue
+            if tenant_id is not None and session.tenant_id not in (None, tenant_id):
+                continue
+            if (
+                tenant_workspace_id is not None
+                and session.tenant_workspace_id not in (None, tenant_workspace_id)
+            ):
+                continue
+            if identity_id is not None and session.identity_id != identity_id:
+                continue
+            sessions.append(session)
+        return sessions
 
     def append_message(self, session_id: str, message: AgentMessage) -> AgentSession:
         session = self.get(session_id)
@@ -101,12 +157,20 @@ class JsonAgentSessionStore(InMemoryAgentSessionStore):
         workspace_id: str | None = None,
         identity_id: str | None = None,
         user_id: str | None = None,
+        tenant_id: str | None = None,
+        tenant_workspace_id: str | None = None,
+        owner_principal_id: str | None = None,
+        identity_version_id: str | None = None,
     ) -> AgentSession:
         session = super().ensure_session(
             session_id,
             workspace_id=workspace_id,
             identity_id=identity_id,
             user_id=user_id,
+            tenant_id=tenant_id,
+            tenant_workspace_id=tenant_workspace_id,
+            owner_principal_id=owner_principal_id,
+            identity_version_id=identity_version_id,
         )
         self._save()
         return session

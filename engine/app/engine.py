@@ -23,18 +23,26 @@ from app.infrastructure.model_gateway.router import (
 )
 from app.infrastructure.persistence import (
     InMemoryAgentSessionStore,
+    InMemoryPlatformRegistryStore,
     InMemoryPolicyStore,
     InMemoryRunStore,
     InMemorySecretStore,
     InMemoryWorkspaceStore,
     JsonAgentSessionStore,
     JsonCatalogStore,
+    JsonPlatformRegistryStore,
     JsonPolicyStore,
     JsonRunStore,
     JsonSecretStore,
     JsonWorkspaceStore,
     LocalArtifactStore,
     LocalMarkdownMemoryStore,
+    PostgresAgentSessionStore,
+    PostgresPlatformRegistryStore,
+    PostgresRunStore,
+    PostgresTraceStore,
+    create_platform_registry_from_env,
+    create_runtime_engine,
 )
 from app.infrastructure.repositories import InMemorySkillRegistry, InMemoryToolRegistry
 from app.infrastructure.tool_runners import ApiToolRunner, PythonToolRunner
@@ -48,15 +56,19 @@ class SkillEngine:
         tool_registry: InMemoryToolRegistry,
         model_router: ModelRouter,
         tool_executor: ToolExecutorPort,
-        trace_store: InMemoryTraceStore,
+        trace_store: InMemoryTraceStore | JsonTraceStore | PostgresTraceStore,
         artifact_store: LocalArtifactStore,
-        run_store: InMemoryRunStore,
+        run_store: InMemoryRunStore | JsonRunStore | PostgresRunStore,
         session_store: AgentSessionStorePort | None = None,
         memory_store: MemoryStorePort | None = None,
         workspace_store: WorkspaceStorePort | None = None,
         policy_store: InMemoryPolicyStore | JsonPolicyStore | None = None,
         secret_store: InMemorySecretStore | JsonSecretStore | None = None,
         catalog_store: JsonCatalogStore | None = None,
+        platform_registry: InMemoryPlatformRegistryStore
+        | JsonPlatformRegistryStore
+        | PostgresPlatformRegistryStore
+        | None = None,
     ) -> None:
         self.skill_registry = skill_registry
         self.tool_registry = tool_registry
@@ -71,6 +83,7 @@ class SkillEngine:
         self.policy_store = policy_store or InMemoryPolicyStore()
         self.secret_store = secret_store or InMemorySecretStore()
         self.catalog_store = catalog_store
+        self.platform_registry = platform_registry or InMemoryPlatformRegistryStore()
         self.runtime = SkillRuntime(
             skill_registry=skill_registry,
             tool_registry=tool_registry,
@@ -101,20 +114,36 @@ class SkillEngine:
         state_dir = _state_dir(catalog_path)
         policy_store = JsonPolicyStore(policy_path or state_dir / "policies.json")
         secret_store = JsonSecretStore(secret_path or state_dir / "secrets.json")
+        # Prefer PostgreSQL when DATABASE_URL is configured (platform + runtime).
+        platform_registry = create_platform_registry_from_env() or JsonPlatformRegistryStore(
+            state_dir / "platform.json"
+        )
+        runtime_engine = create_runtime_engine()
+        if runtime_engine is not None:
+            session_store: AgentSessionStorePort = PostgresAgentSessionStore(runtime_engine)
+            run_store: InMemoryRunStore | PostgresRunStore = PostgresRunStore(runtime_engine)
+            trace_store: InMemoryTraceStore | PostgresTraceStore = PostgresTraceStore(
+                runtime_engine
+            )
+        else:
+            session_store = JsonAgentSessionStore(session_path or state_dir / "sessions.json")
+            run_store = JsonRunStore(run_path or state_dir / "runs.json")
+            trace_store = JsonTraceStore(trace_path or state_dir / "traces.json")
         engine = cls(
             skill_registry=InMemorySkillRegistry(),
             tool_registry=InMemoryToolRegistry(),
             model_router=ModelRouter.from_config(config),
             tool_executor=_default_tool_executor(policy_store, secret_store),
-            trace_store=JsonTraceStore(trace_path or state_dir / "traces.json"),
+            trace_store=trace_store,
             artifact_store=LocalArtifactStore("data/artifacts"),
-            run_store=JsonRunStore(run_path or state_dir / "runs.json"),
-            session_store=JsonAgentSessionStore(session_path or state_dir / "sessions.json"),
+            run_store=run_store,
+            session_store=session_store,
             memory_store=LocalMarkdownMemoryStore(state_dir / "memory"),
             workspace_store=JsonWorkspaceStore(workspace_path or state_dir / "workspaces.json"),
             policy_store=policy_store,
             secret_store=secret_store,
             catalog_store=catalog_store,
+            platform_registry=platform_registry,
         )
         engine.load_catalog()
         return engine
@@ -175,7 +204,14 @@ class SkillEngine:
         input_data: dict[str, object],
         context: RunContext | None = None,
     ) -> RunResult:
-        return await self.runtime.run_skill(skill_id, input_data, context)
+        result = await self.runtime.run_skill(skill_id, input_data, context)
+        try:
+            from app.application.platform.run_bridge import register_run_artifacts_into_platform
+
+            register_run_artifacts_into_platform(self.platform_registry, result)
+        except Exception:  # noqa: BLE001 - catalog sync must not fail the run
+            pass
+        return result
 
     async def resume_run(self, run_id: str) -> RunResult:
         return await self.runtime.resume_run(run_id)

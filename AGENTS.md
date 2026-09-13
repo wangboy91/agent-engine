@@ -24,11 +24,10 @@
     (`skills/`、`tools/`、`inputs/`)。
 - `prototype/`:原型与产品设计稿 —— 企业智能体产品设计文档、参考截图
   (`prototype/screenshots/`,不入库)。
+- `web/`:正式前端工程（Vite + React + TS），对接 engine `/api/v1`；
+  设计冻结稿仍在 `prototype/web/`。
 - `docs/`:工程与架构文档(含 `diagrams/`)。
 - `openspec/`:变更流程规范(OpenSpec,见下文"变更流程治理")。
-
-预留位:未来前端界面放 `web/`(前后端分离方案见 `openspec/changes/`,
-内核稳定、界面常改的边界以立项文档为准)。
 
 ## Skill 与 Tool 包约定
 

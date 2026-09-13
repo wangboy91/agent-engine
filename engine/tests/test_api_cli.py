@@ -129,19 +129,12 @@ def test_fastapi_registers_and_runs_skill(tmp_path: Path) -> None:
     assert any(event["type"] == "tool_succeeded" for event in trace_response.json())
 
 
-def test_fastapi_runtime_console_serves_static_ui(tmp_path: Path) -> None:
+def test_legacy_runtime_console_ui_removed(tmp_path: Path) -> None:
     engine = SkillEngine.create_for_testing(artifact_root=tmp_path)
     client = TestClient(create_app(engine))
 
-    page_response = client.get("/ui")
-    script_response = client.get("/ui/assets/runtime-console.js")
-
-    assert page_response.status_code == 200
-    assert "Agent Engine 运行控制台" in page_response.text
-    assert "深度思考" in page_response.text
-    assert script_response.status_code == 200
-    assert "自动识别意图" in script_response.text
-    assert "/chat/messages/events" in script_response.text
+    assert client.get("/ui").status_code == 404
+    assert client.get("/ui/assets/runtime-console.js").status_code == 404
     assert "/skills/scan" in script_response.text
     assert "addMarkdownResult" in script_response.text
     assert "appendMarkdownDelta" in script_response.text

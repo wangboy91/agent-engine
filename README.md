@@ -321,6 +321,50 @@ ae workspace scan demo --identity-id alice
 | 流式 Skill | `POST /skills/{skill_id}/runs/events`、`WS /ws/skills/{skill_id}/runs` |
 | 工作区治理 | `/workspaces` 下的 identity、skills、secrets、tool-policies 路由 |
 | 审批 | `GET /tool-approvals`、`POST /tool-approvals/{approval_id}/approve`、`.../deny` |
+| **1.0.1 平台 API** | `/api/v1/tenants...` 管理；`/api/v1/me/identities|sessions|runs|artifacts` 员工隔离 API |
+
+### 1.0.1 `/api/v1` 与 Principal（开发鉴权桩）
+
+平台与员工 API 依赖请求头 Principal（生产将替换为 OIDC）：
+
+```text
+X-Tenant-Id: t-demo
+X-Principal-Id: u_alice
+X-Principal-Type: user
+X-Workspace-Roles: end_user
+X-Group-Ids: all-staff
+```
+
+```bash
+# 创建租户 / 工作空间 / Identity 并发布授权（管理）
+curl -X POST http://127.0.0.1:8000/api/v1/tenants \
+  -H 'content-type: application/json' \
+  -H 'X-Tenant-Id: t-demo' -H 'X-Principal-Id: admin' \
+  -H 'X-Workspace-Roles: tenant_admin,ws_admin' \
+  -d '{"tenant_id":"t-demo","name":"Demo"}'
+
+# 员工只读已授权智能体
+curl http://127.0.0.1:8000/api/v1/me/identities \
+  -H 'X-Tenant-Id: t-demo' -H 'X-Principal-Id: u_alice'
+```
+
+数据存储：设置 `AGENT_ENGINE_DATABASE_URL` 后平台注册表与 Session/Run/Trace 使用 PostgreSQL；  
+可选 `AGENT_ENGINE_RUNTIME_DATABASE_URL` 拆分运行库。未配置时回退本地 JSON。
+
+### Web 前端（`web/`）
+
+```bash
+# 终端 1：引擎 API
+cd engine
+uv --cache-dir .uv-cache run --extra dev ae serve --host 127.0.0.1 --port 8000 --config agent.yaml
+
+# 终端 2：前端
+cd web
+npm install
+npm run dev   # http://127.0.0.1:5173
+```
+
+开发代理将 `/api` 转发到 `127.0.0.1:8000`。设计稿见 `prototype/web/`，契约见 `docs/api/openapi.json`。
 
 直接运行 Skill：
 
@@ -418,11 +462,20 @@ uv --cache-dir .uv-cache run --extra dev mypy app
 
 ## 文档索引
 
+完整分层索引见 [docs/INDEX.md](docs/INDEX.md)。当前迭代为 **1.0.1**（产品/架构/原型基线）：
+
+- [版本 1.0.1 变更定义](docs/VERSION_1.0.1.md)：本迭代范围、验收与非目标。
+- [架构文档 1.0.1](docs/架构文档_1.0.1.md)：平台双层模型、隔离边界与演进架构。
+- [权限架构设计](docs/权限架构设计.md)：平台 / 智能体开发 / 企业扩展 / 员工 四维 SaaS 权限。
+- [技术实现文档 1.0.1](docs/技术实现文档_1.0.1.md)：领域对象、API、任务拆解。
+- [产品详细设计 1.0.1](prototype/产品详细设计_1.0.1.md)：角色、页面与验收。
+- [Web 原型](prototype/web/index.html)：管理控制台 + 用户工作台（静态可打开）。
+
+工程仍有效基线：
+
 - [架构总览与演进](docs/架构总览与演进.md)：当前分层、主要调用链、依赖规则和目标架构。
 - [技术设计与生产化](docs/技术设计与生产化.md)：契约、运行时、模型、Tool、存储、安全、部署建议。
 - [当前能力评估与上线路线](docs/当前能力评估与上线路线.md)：基于代码与测试的成熟度结论、风险与迭代计划。
-- [使用指南](docs/Usage_Guide.md)：补充 CLI/HTTP 操作说明。
-- [项目结构](docs/Project_Structure.md)：历史目录职责说明。
-- [运行调用图](docs/Runtime_Call_Graph.md)：调用图与时序图。
+- [ADR：租户与 Workspace 层级](docs/ADR_企业智能体租户与Workspace层级设计.md)：模板/实例双层权威决策。
 
-历史设计文档保留用于追溯；以本 README 和上述三份中文文档作为当前工程实施基线。
+历史设计文档保留用于追溯；实施基线以 `docs/INDEX.md` 分层结果为准。

@@ -144,7 +144,31 @@ class AgentSessionStorePort(Protocol):
         workspace_id: str | None = None,
         identity_id: str | None = None,
         user_id: str | None = None,
+        tenant_id: str | None = None,
+        tenant_workspace_id: str | None = None,
+        owner_principal_id: str | None = None,
+        identity_version_id: str | None = None,
     ) -> AgentSession:
+        ...
+
+    def get_for_owner(
+        self,
+        session_id: str,
+        *,
+        tenant_id: str | None = None,
+        tenant_workspace_id: str | None = None,
+        owner_principal_id: str,
+    ) -> AgentSession:
+        ...
+
+    def list_for_owner(
+        self,
+        *,
+        owner_principal_id: str,
+        tenant_id: str | None = None,
+        tenant_workspace_id: str | None = None,
+        identity_id: str | None = None,
+    ) -> list[AgentSession]:
         ...
 
     def append_message(self, session_id: str, message: AgentMessage) -> AgentSession:

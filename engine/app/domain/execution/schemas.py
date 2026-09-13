@@ -52,6 +52,12 @@ class RunContext(BaseModel):
     identity_id: str | None = None
     role_id: str | None = None
     project_id: str | None = None
+    # SaaS ownership (1.0.1): optional for backward compatibility with CLI/dev paths.
+    tenant_id: str | None = None
+    tenant_workspace_id: str | None = None
+    identity_version_id: str | None = None
+    owner_principal_id: str | None = None
+    resource_snapshot: JsonObject = Field(default_factory=dict)
     metadata: JsonObject = Field(default_factory=dict)
 
 

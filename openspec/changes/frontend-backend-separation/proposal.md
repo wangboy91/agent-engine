@@ -2,33 +2,30 @@
 
 ## Why
 
-内核与界面的变更频率不同:`app`(Skill 运行时内核)趋于稳定,而 Web
-管理端/运行控制台会频繁迭代。当前运行控制台以内嵌静态文件形式存在于
-`engine/app/interfaces/http/static/runtime-console.html`,界面任何改动都要
-改 Python 包并重新构建发布,两边的迭代节奏被绑死。
+内核与界面变更频率不同。1.0.1 原型 r2 已定稿，但当前运行控制台仍是 `engine/app/interfaces/http/static/runtime-console.html` 内嵌单文件，界面迭代被绑死在 Python 包发布上。
 
-仓库目录已完成分类(`engine/` 自成项目根),需要补上对应的前端位置与边界约定。
+**前置依赖：** `tenant-workspace-identity-registry` 必须先提供 `/api/v1` 契约与所有权隔离，否则前端只能继续堆 Mock，无法验收串线。
 
 ## What Changes
 
-- 新增 `web/` 前端项目(仓库根一级目录),承接现有内嵌运行控制台的全部界面能力,
-  后续管理控制台/用户工作台界面都在此迭代。
-- `engine/` 只保留 API 与内核职责:FastAPI 作为纯 API 服务,静态资源服务策略
-  (开发期代理 / 生产期是否由引擎托管构建产物)在设计阶段定案。
-- 内嵌 `runtime-console.html` 迁出 `app`,由 `web/` 项目替代;
-  迁移期内保留只读兼容入口,迁移完成后移除。
-- 明确内核/界面的 API 契约边界:界面只依赖公开 HTTP API(含 SSE/WebSocket),
-  不得 import `app`,不得依赖内核内部模块。
+- 新增仓库一级目录 `web/`，承载管理控制台 + 用户工作台（对齐 `prototype/web` r2 信息架构与权限行为）。
+- `engine/` 只保留 API 与内核；前端只消费公开 HTTP/SSE/WS，禁止 `import app`。
+- 固化 OpenAPI 契约文件；开发期代理联调。
+- 迁移期内保留 `/ui` 只读兼容；稳定后移除内嵌 runtime-console。
 
 ## Impact
 
-- 受影响代码:`engine/app/interfaces/http/`(静态资源挂载、控制台路由)
-- 新增目录:`web/`
-- 文档:`docs/`、根 `README.md`、`AGENTS.md` 归位规则补充 `web/`
-- 不改变 `SkillEngine` SDK/CLI 公开行为;API 路由保持兼容
+- 新增：`web/`
+- 受影响：`engine/app/interfaces/http/`（静态资源策略）、根 `README.md`、`AGENTS.md`
+- 依赖 change：`tenant-workspace-identity-registry`（API + 隔离）
+- 不改变：`SkillEngine` SDK/CLI 语义
 
 ## Non-goals
 
-- 不重写内核任何运行时逻辑
-- 不在本变更内实现新界面功能(仅迁移现有控制台能力)
-- 不引入服务端渲染框架;前端技术选型在 design 阶段确定
+- 不在本 change 重写内核运行时
+- 不做生产级前端 SSR/微服务
+- 不实现 r2 之外的完整资源中心页面（Prompt/Component/Knowledge 等）
+
+## 验收映射
+
+以 `prototype/web` r2 为视觉与交互基线：角色视角、创建向导、产出物目录树、`/me` 隔离行为。

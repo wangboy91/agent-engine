@@ -525,7 +525,17 @@ class SkillRuntime:
         if context is None:
             return {}
         data: dict[str, object] = {}
-        for key in ("user_id", "workspace_id", "identity_id", "role_id", "project_id"):
+        for key in (
+            "user_id",
+            "workspace_id",
+            "identity_id",
+            "role_id",
+            "project_id",
+            "tenant_id",
+            "tenant_workspace_id",
+            "identity_version_id",
+            "owner_principal_id",
+        ):
             value = getattr(context, key)
             if value is not None:
                 data[key] = value
@@ -539,7 +549,17 @@ class SkillRuntime:
         if context is None:
             return {}
         data: dict[str, str | None] = {}
-        for key in ("user_id", "workspace_id", "identity_id", "role_id", "project_id"):
+        for key in (
+            "user_id",
+            "workspace_id",
+            "identity_id",
+            "role_id",
+            "project_id",
+            "tenant_id",
+            "tenant_workspace_id",
+            "identity_version_id",
+            "owner_principal_id",
+        ):
             value = getattr(context, key)
             if value is not None:
                 data[key] = value
@@ -553,14 +573,9 @@ class SkillRuntime:
     ) -> RunContext:
         metadata = dict(context.metadata) if context is not None else {}
         metadata.update({"parent_run_id": parent_run_id, "workflow_step_id": step_id})
-        return RunContext(
-            user_id=context.user_id if context is not None else None,
-            workspace_id=context.workspace_id if context is not None else None,
-            identity_id=context.identity_id if context is not None else None,
-            role_id=context.role_id if context is not None else None,
-            project_id=context.project_id if context is not None else None,
-            metadata=metadata,
-        )
+        if context is None:
+            return RunContext(metadata=metadata)
+        return context.model_copy(update={"metadata": metadata})
 
     async def _run_loop(
         self,
