@@ -4,9 +4,10 @@ Agent Engine AI 产品的 Python Skill 运行时内核。这里是独立的项�
 
 ```bash
 cd engine
-uv --cache-dir .uv-cache run --extra dev python -m pytest   # 测试
-uv --cache-dir .uv-cache run --extra dev ae --version      # CLI
-uv --cache-dir .uv-cache run --extra dev ae api --host 0.0.0.0 --port 8000  # 启动 API
+uv sync --extra dev          # 首次
+uv run pytest                # 测试
+uv run ae --version          # CLI
+uv run ae serve --host 127.0.0.1 --port 8000 --config agent.yaml
 ```
 
 - 包代码:`app/`(`engine.py` 是唯一公共门面 `SkillEngine`)

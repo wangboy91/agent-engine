@@ -7,7 +7,7 @@
 ```bash
 # 1) 启动引擎 API（engine/ 目录）
 cd engine
-uv --cache-dir .uv-cache run --extra dev ae serve --host 127.0.0.1 --port 8000 --config agent.yaml
+uv run ae serve --host 127.0.0.1 --port 8000 --config agent.yaml
 
 # 2) 启动前端
 cd web

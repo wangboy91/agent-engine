@@ -49,34 +49,31 @@ Skill 运行时配置不要写进 `SKILL.md`,应放在 `agent.skill.json`。
 
 ## 开发命令
 
-命令统一在 `engine/` 目录下执行(项目根已移入其中):
+命令统一在 `engine/` 下执行。首次 `uv sync --extra dev`，之后短命令：
 
 ```bash
 cd engine
-uv --cache-dir .uv-cache run --extra dev pytest
-uv --cache-dir .uv-cache run --extra dev ruff check .
-uv --cache-dir .uv-cache run --extra dev mypy app
+uv run pytest
+uv run ruff check app tests
+uv run mypy app
+uv run ae --version
 ```
 
-常用的 CLI 冒烟测试:
+CLI 冒烟：
 
 ```bash
 cd engine
-uv --cache-dir .uv-cache run --extra dev ae --version
-uv --cache-dir .uv-cache run --extra dev ae tool test resources/tools/subtitle_generate_srt resources/inputs/subtitle_input.json --output json
-uv --cache-dir .uv-cache run --extra dev ae skill run talking-video resources/inputs/talking-video-input.json --skills-dir resources/skills --tools-dir resources/tools --output json
-uv --cache-dir .uv-cache run --extra dev ae chat --once "generate a 60 second talking video about eye-friendly desk lamps for programmers" --skills-dir resources/skills --tools-dir resources/tools --output json
+uv run ae tool test resources/tools/subtitle_generate_srt resources/inputs/subtitle_input.json --output json
+uv run ae skill run talking-video resources/inputs/talking-video-input.json --skills-dir resources/skills --tools-dir resources/tools --output json
+uv run ae chat --once "generate a 60 second talking video about eye-friendly desk lamps for programmers" --skills-dir resources/skills --tools-dir resources/tools --output json
+uv run ae serve --host 127.0.0.1 --port 8000 --config agent.yaml
 ```
 
-项目在 `engine/pyproject.toml` 中声明 `requires-python = ">=3.12"`。
+更多见 [docs/命令速查.md](docs/命令速查.md)。项目 `requires-python = ">=3.12"`。
 
 ## 已知基线记录
 
-2026-09-12 目录重构(engine/ 自成项目根)后,在 `engine/` 下运行
-`uv --cache-dir .uv-cache run --extra dev pytest`:
-
-结果 `127 passed, 1 warning`(警告来自 FastAPI TestClient 的 Starlette
-弃用提示)。ruff 全部通过;mypy 无问题;CLI 与 catalog 读取正常。
+1.0.1 后平台/运行数据默认使用 PostgreSQL（见 `engine/.env`）；全量 `uv run pytest` 约 **141 passed**。界面使用根目录 `web/`（`npm run dev`），旧 `/ui` 已移除。
 
 ## 工作守则
 

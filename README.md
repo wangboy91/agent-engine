@@ -38,7 +38,7 @@ Agent Engine 的目标不是另一个聊天 UI，而是业务智能体的执行�
 | 模型网关 | 可用 | Mock、OpenAI-compatible、Anthropic-compatible；统一请求/响应模型 |
 | Agent | 基础可用 | 显式 Skill、场景映射、关键词路由、必填输入补齐、低置信度确认、会话记录 |
 | 工作区治理 | 基础可用 | workspace、identity、Skill 绑定、Tool allow/ask/deny、审批、Secret 引用 |
-| 接入层 | 可用 | Typer CLI、FastAPI、SSE、WebSocket、轻量运行控制台 |
+| 接入层 | 可用 | Typer CLI、FastAPI、SSE、WebSocket；界面见 `web/` |
 | 可观测性 | 基础可用 | Run、Trace、Artifact、流式 trace 事件、敏感键脱敏 |
 | 生产级平台能力 | 未完成 | 认证鉴权、关系型数据库、分布式任务、限流、指标告警、密钥托管、沙箱隔离 |
 
@@ -87,14 +87,23 @@ flowchart TB
 - [uv](https://docs.astral.sh/uv/)；推荐用于依赖和命令执行
 - 真实模型运行时需要对应服务的 URL、模型名和密钥
 
-安装开发依赖：
+安装开发依赖（一次即可）：
 
 ```bash
 cd engine
-uv --cache-dir .uv-cache sync --extra dev
+uv sync --extra dev
 ```
 
-安装命令行工具（在仓库根目录重复执行可升级）：
+之后在 `engine/` 下统一用短命令（详见 [命令速查](docs/命令速查.md)）：
+
+```bash
+uv run ae --help
+uv run pytest
+uv run ruff check app tests
+uv run mypy app
+```
+
+可选：把 CLI 装到 PATH（任意目录直接敲 `ae`）：
 
 ```bash
 cd engine
@@ -104,6 +113,8 @@ ae --version
 
 若终端找不到 `ae`，执行 `uv tool update-shell` 后重开终端。
 
+仓库根目录也可用 `.\scripts\ae.ps1 serve` / `scripts\ae.cmd` 包装。
+
 ### 不配置密钥的本地验证
 
 以下命令不传 `--config`，CLI 会创建测试用 Mock 引擎：
@@ -111,13 +122,13 @@ ae --version
 ```bash
 cd engine
 # 验证 Python Tool 的 stdin/stdout 与 Schema 合约
-uv --cache-dir .uv-cache run --extra dev ae tool test \
+uv run ae tool test \
   resources/tools/subtitle_generate_srt \
   resources/inputs/subtitle_input.json \
   --output json
 
 # 运行带 Tool 的 Skill
-uv --cache-dir .uv-cache run --extra dev ae skill run \
+uv run ae skill run \
   talking-video \
   resources/inputs/talking-video-input.json \
   --skills-dir resources/skills \
@@ -125,7 +136,7 @@ uv --cache-dir .uv-cache run --extra dev ae skill run \
   --output json
 
 # 运行内容视频 DAG 工作流
-uv --cache-dir .uv-cache run --extra dev ae skill run \
+uv run ae skill run \
   content-video-workflow \
   resources/inputs/content-video-workflow-input.json \
   --skills-dir resources/skills \
@@ -141,19 +152,18 @@ Mock 输出中的 `Mock script for ...` 仅说明运行链路正常，不应当�
 
 ```bash
 cd engine
-uv --cache-dir .uv-cache run --extra dev ae tool register resources/tools/subtitle_generate_srt
-uv --cache-dir .uv-cache run --extra dev ae skill register resources/skills/talking-video
+uv run ae tool register resources/tools/subtitle_generate_srt
+uv run ae skill register resources/skills/talking-video
 ```
 
 再启动服务：
 
 ```bash
 cd engine
-uv --cache-dir .uv-cache run --extra dev ae serve \
-  --host 127.0.0.1 --port 8000 --config agent.yaml
+uv run ae serve --host 127.0.0.1 --port 8000 --config agent.yaml
 ```
 
-可访问 `http://127.0.0.1:8000/health` 检查健康状态，或访问 `http://127.0.0.1:8000/ui` 使用内置运行控制台。`gateway` 与 `serve` 当前都启动同一 FastAPI 应用；前者只是为网关部署场景保留的 CLI 别名。
+可访问 `http://127.0.0.1:8000/health` 检查健康状态。界面请使用 `web/`（`npm run dev` → `:5173`）。`gateway` 与 `serve` 当前都启动同一 FastAPI 应用；前者只是为网关部署场景保留的 CLI 别名。
 
 ## 配置真实模型
 
@@ -161,7 +171,7 @@ uv --cache-dir .uv-cache run --extra dev ae serve \
 
 ```bash
 cd engine
-uv --cache-dir .uv-cache run --extra dev ae init \
+uv run ae init \
   --protocol openai-compatible \
   --profile production \
   --base-url https://example.com/v1 \
@@ -313,7 +323,7 @@ ae workspace scan demo --identity-id alice
 
 | 资源 | 关键接口 |
 | --- | --- |
-| 基础状态 | `GET /health`、`GET /ui` |
+| 基础状态 | `GET /health` |
 | 包注册 | `POST /tools/register`、`GET /tools`、`POST /skills/register`、`GET /skills` |
 | 运行 | `POST /skills/{skill_id}/runs`、`GET /runs/{run_id}`、`POST /runs/{run_id}/resume` |
 | 可观测性 | `GET /runs/{run_id}/trace`、`GET /runs/{run_id}/artifacts`、`GET /artifacts/{artifact_id}` |
@@ -356,7 +366,7 @@ curl http://127.0.0.1:8000/api/v1/me/identities \
 ```bash
 # 终端 1：引擎 API
 cd engine
-uv --cache-dir .uv-cache run --extra dev ae serve --host 127.0.0.1 --port 8000 --config agent.yaml
+uv run ae serve --host 127.0.0.1 --port 8000 --config agent.yaml
 
 # 终端 2：前端
 cd web
@@ -425,9 +435,9 @@ Tool 包包括字幕生成、亲子实验提示词写入和 mock 视频渲染。
 
 ```bash
 cd engine
-uv --cache-dir .uv-cache run --extra dev pytest
-uv --cache-dir .uv-cache run --extra dev ruff check .
-uv --cache-dir .uv-cache run --extra dev mypy app
+uv run pytest
+uv run ruff check app tests
+uv run mypy app
 ```
 
 测试目录按子系统组织：

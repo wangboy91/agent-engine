@@ -54,9 +54,9 @@
 ## 7. 托管与切换
 
 - [x] `npm run build` 成功（web/dist）
-- [ ] engine 静态挂载 web/dist
-- [ ] `/ui` 切换到新前端
-- [ ] 移除内嵌 runtime-console
+- [x] **移除旧 `/ui` 与内嵌 runtime-console**（不再提供 /ui，界面统一用 `web/`）
+- [ ] engine 静态挂载 `web/dist`（可选；当前用 vite dev / 独立静态托管）
+- [ ] 冒烟：本地一键启动文档更新（README 已写 web/ 启动）
 
 ## 8. 收尾
 

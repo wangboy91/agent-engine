@@ -135,18 +135,6 @@ def test_legacy_runtime_console_ui_removed(tmp_path: Path) -> None:
 
     assert client.get("/ui").status_code == 404
     assert client.get("/ui/assets/runtime-console.js").status_code == 404
-    assert "/skills/scan" in script_response.text
-    assert "addMarkdownResult" in script_response.text
-    assert "appendMarkdownDelta" in script_response.text
-    assert "markdown_delta" in script_response.text
-    assert "appendModelDelta" in script_response.text
-    assert "llm_delta" in script_response.text
-    assert "shouldShowEvent" in script_response.text
-    assert 'eventName !== "llm_delta"' in script_response.text
-    assert "extractDelta" in script_response.text
-    assert "data.data.delta" in script_response.text
-    assert "模型原生输出" in script_response.text
-    assert "confirmPendingRun" in script_response.text
 
 
 def test_fastapi_workspace_skill_scan_registers_installs_and_binds(
