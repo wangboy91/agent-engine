@@ -2,6 +2,10 @@
 
 from app.domain.platform import build_artifact_meta
 from app.infrastructure.persistence.artifact_store import LocalArtifactStore
+from app.infrastructure.persistence.auth_store_pg import (
+    PostgresAuthStore,
+    create_auth_store,
+)
 from app.infrastructure.persistence.catalog_store import (
     CatalogDocument,
     CatalogEntry,
@@ -59,10 +63,12 @@ __all__ = [
     "LocalArtifactStore",
     "LocalMarkdownMemoryStore",
     "PostgresAgentSessionStore",
+    "PostgresAuthStore",
     "PostgresPlatformRegistryStore",
     "PostgresRunStore",
     "PostgresTraceStore",
     "build_artifact_meta",
+    "create_auth_store",
     "create_platform_registry_from_env",
     "create_postgres_run_store",
     "create_postgres_session_store",

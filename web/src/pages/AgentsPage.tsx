@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { useApp } from "../App";
 import { PageShell } from "../components/PageShell";
+import { DataTable, ErrorBox } from "../components/ui";
 import type { IdentityDefinition } from "./types";
 
 export function AgentsPage() {
@@ -72,7 +73,7 @@ export function AgentsPage() {
       title="智能体"
       desc="Identity Definition。版本与发布在详情页完成。"
     >
-      {error ? <div className="error-box">{error}</div> : null}
+      {error ? <ErrorBox message={error} /> : null}
       <div className="card" style={{ marginBottom: 12 }}>
         <div className="card-header">
           <h2 className="card-title">新建 Definition</h2>
@@ -106,39 +107,22 @@ export function AgentsPage() {
       </div>
       <div className="card">
         <div className="card-body tight">
-          {items.length === 0 ? (
-            <div className="empty">
-              <div className="empty-title">还没有智能体</div>
-              使用上方表单创建，或在设置中初始化租户/工作空间
-            </div>
-          ) : (
-            <table className="data">
-              <thead>
-                <tr>
-                  <th>名称</th>
-                  <th>编码</th>
-                  <th>描述</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((a) => (
-                  <tr key={a.definition_id}>
-                    <td>
-                      <strong>{a.name}</strong>
-                    </td>
-                    <td className="mono">{a.key}</td>
-                    <td>{a.description || "—"}</td>
-                    <td className="actions">
-                      <Link className="btn btn-sm" to={`/console/agents/${a.definition_id}`}>
-                        配置
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+          <DataTable
+            columns={[
+              { key: "name", title: "名称", render: (a) => <strong>{a.name}</strong> },
+              { key: "key", title: "编码", render: (a) => <span className="mono">{a.key}</span> },
+              { key: "description", title: "描述", render: (a) => a.description || "—" },
+            ]}
+            rows={items}
+            rowKey={(a) => a.definition_id}
+            emptyTitle="还没有智能体"
+            emptyHint="使用上方表单创建，或在设置中初始化租户/工作空间"
+            renderActions={(a) => (
+              <Link className="btn btn-sm" to={`/console/agents/${a.definition_id}`}>
+                配置
+              </Link>
+            )}
+          />
         </div>
       </div>
     </PageShell>

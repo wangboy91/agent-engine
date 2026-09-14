@@ -8,26 +8,48 @@
 
 主门面(facade)是 `engine/app/engine.py` 中的 `SkillEngine`。
 
+## 架构硬约束（必须遵守）
+
+### 后端 DDD 分层
+
+所有后端服务（`engine/`、`account-service/` 及未来服务）`app/` 下**只允许**这些顶层包：
+
+```text
+domain/           领域模型、纯规则、值对象；禁止 I/O / FastAPI / SQLAlchemy Session
+application/      用例编排、Ports（Protocol）；禁止 import infrastructure 具体实现
+infrastructure/   持久化、外部系统、token/DB 适配器
+interfaces/       HTTP / CLI / 脚本入口；只调 application，禁止绕过
+```
+
+依赖方向：
+
+```text
+interfaces → application → domain
+infrastructure → domain   （实现 application 定义的 Port）
+禁止：application → infrastructure；domain → 其它层
+```
+
+`engine/tests/test_architecture_layers.py` 与 `account-service/tests/test_layers.py` 会强制校验。
+
+### 前端组件复用
+
+- 通用 UI 放 `web/src/components/`，页面只组合不复制样式类堆砌
+- 新页面优先复用 `PageShell` / `DataTable` / `EmptyState` / `ErrorBox` / `Pill` 等
+- 业务页放 `web/src/pages/`，API 封装放 `web/src/api/`
+- 禁止把 engine 内部 Python 模块耦合进前端
+
 ## 仓库结构
 
-根目录按"代码 / 原型 / 文档 / 规范文档"四类组织:
+根目录按“代码 / 账号服务 / 原型 / 文档 / 规范文档”组织:
 
-- `engine/`:后端内核,自成项目根(`pyproject.toml`、`uv.lock`、`agent.yaml`、
-  `.env`、`.venv`、`.agent/`、`data/` 都在这里)。**所有构建、运行、测试命令
-  一律先 `cd engine` 再执行。**
-  - `engine/app/`:核心包,按 DDD 分层 —— `domain/`(领域 schema)、
-    `application/`(编排,含 `ports.py`)、`infrastructure/`(加载器、runner、
-    持久化、注册表、模型 provider)、`interfaces/`(`cli/`、`http/`);
-    `engine.py` 为 SDK、CLI、API 共用的公开门面。
-  - `engine/tests/`:pytest 测试套件,按子系统组织。
-  - `engine/resources/`:本地 Skill/Tool 资源包与示例输入
-    (`skills/`、`tools/`、`inputs/`)。
-- `prototype/`:原型与产品设计稿 —— 企业智能体产品设计文档、参考截图
-  (`prototype/screenshots/`,不入库)。
-- `web/`:正式前端工程（Vite + React + TS），对接 engine `/api/v1`；
-  设计冻结稿仍在 `prototype/web/`。
-- `docs/`:工程与架构文档(含 `diagrams/`)。
-- `openspec/`:变更流程规范(OpenSpec,见下文"变更流程治理")。
+- `engine/`:后端内核,自成项目根。**构建/运行/测试一律先 `cd engine`。**
+  - `engine/app/`:DDD 分层；`engine.py` 为公共门面 `SkillEngine`
+  - `engine/tests/`、`engine/resources/`
+- `account-service/`:**独立账号权限服务**（登录、用户、账号映射）
+  - 同样 DDD：`app/domain|application|infrastructure|interfaces`
+- `web/`:前端（Vite+React+TS），对接 engine 与 account-service
+- `prototype/`:产品设计稿与 HTML 冻结原型
+- `docs/`、`openspec/`
 
 ## Skill 与 Tool 包约定
 
@@ -59,54 +81,49 @@ uv run mypy app
 uv run ae --version
 ```
 
-CLI 冒烟：
+账号服务：
 
 ```bash
-cd engine
-uv run ae tool test resources/tools/subtitle_generate_srt resources/inputs/subtitle_input.json --output json
-uv run ae skill run talking-video resources/inputs/talking-video-input.json --skills-dir resources/skills --tools-dir resources/tools --output json
-uv run ae chat --once "generate a 60 second talking video about eye-friendly desk lamps for programmers" --skills-dir resources/skills --tools-dir resources/tools --output json
-uv run ae serve --host 127.0.0.1 --port 8000 --config agent.yaml
+cd account-service
+uv sync
+uv run python -m app.interfaces.scripts.seed_users
+uv run account-service
 ```
 
-更多见 [docs/命令速查.md](docs/命令速查.md)。项目 `requires-python = ">=3.12"`。
+前端：
+
+```bash
+cd web
+npm run dev
+npm run typecheck
+```
+
+更多见 [docs/命令速查.md](docs/命令速查.md)。
 
 ## 已知基线记录
 
-1.0.1 后平台/运行数据默认使用 PostgreSQL（见 `engine/.env`）；全量 `uv run pytest` 约 **141 passed**。界面使用根目录 `web/`（`npm run dev`），旧 `/ui` 已移除。
+1.0.1：平台/运行数据 PostgreSQL；账号独立 `account-service`；界面 `web/`。  
+`cd engine && uv run pytest` 约 **146 passed**。
 
 ## 工作守则
 
-- 不要提交真实密钥。`engine/.env` 已被忽略,可能包含本地凭证。
-- 生成的 artifact 归属 `engine/data/` 目录,该目录已被忽略。
-- `engine/.agent/catalog.json` 可能由注册类命令创建;做隔离测试时请使用 `--catalog`。
-- 变更范围保持在当前子系统内,并遵循现有的 Pydantic/Typer/FastAPI 风格。
-- 修改运行时行为、schema、模型 provider 请求映射、CLI/API 行为或 Skill/Tool
-  加载逻辑时,新增或更新对应测试。
-- 针对窄范围的示例或 fixture 修复,优先写聚焦的测试,而不是大范围重写端到端用例。
-- 除非有意变更 SDK/API 契约,否则保持 `SkillEngine` 的公开行为不变。
-- Skill 与 Tool 契约使用结构化的 JSON/schema API,不要做临时性解析。
-- 对已存在乱码的文件要谨慎;应有意识地修复编码,避免留下非法 Python 或非法 JSON
-  的局部文本编辑。
-- 归位规则:内核代码、测试、资源包放 `engine/`;产品原型类内容放 `prototype/`,
-  工程文档放 `docs/`;不在根目录新增一级目录。
-- Git 操作规则:**不自动执行 `git add` / `git commit` / `git push`**,仅在用户
-  明确要求时执行;`.codex/`、`.claude/`、`.serena/`、`.codegraph/` 等本地
-  agent/工具目录不入库。
+- 不要提交真实密钥。`engine/.env`、`account-service/.env` 已忽略。
+- 生成的 artifact 归属 `engine/data/`，已忽略。
+- 变更范围保持在当前子系统；新能力加 Port + adapter，不破坏 `SkillEngine` 公开行为。
+- 修改运行时/schema/API 时同步测试。
+- **禁止** application 直接 import infrastructure；**禁止**在 domain 写 I/O。
+- 归位：内核 `engine/`；账号 `account-service/`；前端 `web/`；原型 `prototype/`；文档 `docs/`。
+- Git：不自动 add/commit/push；本地 agent 目录不入库。
 
 ## 常用验证目标
 
-- Skill loader 变更:`engine/tests/test_skill_loader.py`
-- Tool loader/runner 变更:`engine/tests/test_tool_loader.py`、`engine/tests/test_python_tool_runner.py`
-- Skill 运行时变更:`engine/tests/test_skill_runtime.py`
-- Agent 路由变更:`engine/tests/test_agent_runtime.py`
-- CLI/API 变更:`engine/tests/test_cli.py`、`engine/tests/test_api_cli.py`
-- 模型配置/provider 变更:`engine/tests/test_model_config.py`、`engine/tests/test_model_providers.py`
-- Catalog/artifact/trace 存储变更:`engine/tests/test_catalog_store.py`、`engine/tests/test_stores.py`
-- 分层规则变更:`engine/tests/test_architecture_layers.py`
+- Skill loader：`engine/tests/test_skill_loader.py`
+- 分层：`engine/tests/test_architecture_layers.py`、`account-service/tests/test_layers.py`
+- 隔离：`engine/tests/test_ownership_isolation.py`
+- 账号：`account-service/tests/`、`engine/tests/test_auth_*.py`
 
 ---
 
 ## 变更流程治理
 
-本仓库装有 OpenSpec(项目级 skills + CLI)与 Superpowers(Claude Code 全局)。变更流程由 OpenSpec 驱动:propose -> apply -> archive。开始任何功能/修复前,先读 `openspec/WORKFLOW.md` 并严格遵守其中分工(尤其"禁止"一节);Superpowers 只用于 brainstorming / TDD / 调试 / 收尾评审,禁止用其 writing-plans / executing-plans 作为并行流程。
+变更由 OpenSpec 驱动:propose → apply → verify → archive。见 `openspec/WORKFLOW.md`。

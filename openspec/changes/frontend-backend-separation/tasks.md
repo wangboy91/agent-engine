@@ -17,7 +17,7 @@
 ## 2. 前端工程初始化
 
 - [x] 创建 `web/`（Vite + React + TS + react-router）
-- [x] 配置 dev proxy → `http://127.0.0.1:8000`
+- [x] 配置 dev proxy → `http://127.0.0.1:8050`
 - [x] 抽取 r2 CSS token 与布局壳（顶栏/侧栏/主区）
 - [x] 更新根 `README.md`、`AGENTS.md`：新增 `web/` 归位与启动命令
 

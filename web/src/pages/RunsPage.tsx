@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { useApp } from "../App";
 import { PageShell } from "../components/PageShell";
+import { DataTable, ErrorBox, StatusPill } from "../components/ui";
 import type { RunResultDto } from "./types";
 
 export function RunsPage() {
@@ -26,53 +27,29 @@ export function RunsPage() {
 
   return (
     <PageShell crumb="管理控制台 / Run" title="Run" desc="按 Principal 过滤 /api/v1/me/runs">
-      {error ? <div className="error-box">{error}</div> : null}
+      <ErrorBox message={error} />
       <div className="card">
         <div className="card-body tight">
-          {runs.length === 0 && !error ? (
-            <div className="empty">
-              <div className="empty-title">暂无 Run</div>
-              通过 CLI 或 /skills/{"{id}"}/runs 产生运行记录
-            </div>
-          ) : (
-            <table className="data">
-              <thead>
-                <tr>
-                  <th>Run</th>
-                  <th>Skill</th>
-                  <th>状态</th>
-                  <th>Owner</th>
-                </tr>
-              </thead>
-              <tbody>
-                {runs.map((r) => {
-                  const owner =
-                    (r.context as { owner_principal_id?: string } | null)?.owner_principal_id ||
-                    "—";
-                  return (
-                    <tr key={r.run_id}>
-                      <td className="mono">{r.run_id.slice(0, 12)}…</td>
-                      <td>{r.skill_id}</td>
-                      <td>
-                        <span
-                          className={`pill ${
-                            r.status === "succeeded"
-                              ? "pill-success"
-                              : r.status === "failed"
-                                ? "pill-danger"
-                                : "pill-info"
-                          }`}
-                        >
-                          {r.status}
-                        </span>
-                      </td>
-                      <td className="mono">{owner}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
+          <DataTable
+            columns={[
+              { key: "run_id", title: "Run", render: (r) => <span className="mono">{r.run_id.slice(0, 12)}…</span> },
+              { key: "skill_id", title: "Skill" },
+              { key: "status", title: "状态", render: (r) => <StatusPill status={r.status} /> },
+              {
+                key: "owner",
+                title: "Owner",
+                render: (r) => (
+                  <span className="mono">
+                    {(r.context as { owner_principal_id?: string } | null)?.owner_principal_id || "—"}
+                  </span>
+                ),
+              },
+            ]}
+            rows={runs}
+            rowKey={(r) => r.run_id}
+            emptyTitle="暂无 Run"
+            emptyHint="通过 CLI 或 /skills/{id}/runs 产生运行记录"
+          />
         </div>
       </div>
     </PageShell>

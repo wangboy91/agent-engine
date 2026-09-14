@@ -554,6 +554,7 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
     async def run_skill(
         skill_id: str,
         request: RunSkillRequest,
+        authorization: str | None = Header(default=None, alias="Authorization"),
         x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
         x_principal_id: str | None = Header(default=None, alias="X-Principal-Id"),
         x_principal_type: str | None = Header(default=None, alias="X-Principal-Type"),
@@ -563,7 +564,15 @@ def create_app(engine: SkillEngine | None = None) -> FastAPI:
         try:
             context = RunContext.model_validate(request.context) if request.context else None
             principal = None
-            if x_tenant_id and x_principal_id:
+            if authorization and authorization.lower().startswith("bearer "):
+                from app.application.platform.auth_demo import parse_dev_token
+                from app.application.platform.run_bridge import enrich_context_with_principal
+
+                parsed = parse_dev_token(authorization.split(" ", 1)[1].strip())
+                if parsed is not None:
+                    principal = parsed
+                    context = enrich_context_with_principal(context, principal)
+            if principal is None and x_tenant_id and x_principal_id:
                 from app.application.platform.run_bridge import enrich_context_with_principal
                 from app.domain.platform import Principal
 

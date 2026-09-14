@@ -73,7 +73,7 @@ web/src
 ## 8. 风险
 
 - 后端契约未稳就写前端 → **门禁：依赖 change tasks 勾选完成**
-- 双入口端口混淆 → README 写清 `engine:8000` + `web:5173`
+- 双入口端口混淆 → README 写清 `engine:8050` + `web:5001`
 - Mock 与真实字段漂移 → 以 openapi 类型为准，mock 走同一类型
 
 ## 9. 与原型目录关系

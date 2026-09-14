@@ -126,7 +126,7 @@ def init_config(
 @app.command("serve")
 def serve(
     host: Annotated[str, typer.Option(help="Host to bind.")] = "127.0.0.1",
-    port: Annotated[int, typer.Option(help="Port to bind.")] = 8000,
+    port: Annotated[int, typer.Option(help="Port to bind.")] = 8050,
     config: Annotated[Path | None, typer.Option(help="Config file to load.")] = None,
     catalog: Annotated[Path | None, typer.Option(help="Catalog file to load.")] = (
         DEFAULT_CATALOG_PATH
@@ -145,7 +145,7 @@ def serve(
 @app.command("gateway")
 def gateway(
     host: Annotated[str, typer.Option(help="Host to bind.")] = "127.0.0.1",
-    port: Annotated[int, typer.Option(help="Port to bind.")] = 8000,
+    port: Annotated[int, typer.Option(help="Port to bind.")] = 8050,
     config: Annotated[Path | None, typer.Option(help="Config file to load.")] = None,
     catalog: Annotated[Path | None, typer.Option(help="Catalog file to load.")] = (
         DEFAULT_CATALOG_PATH

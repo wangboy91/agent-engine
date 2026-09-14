@@ -7,7 +7,7 @@ cd engine
 uv sync --extra dev          # 首次
 uv run pytest                # 测试
 uv run ae --version          # CLI
-uv run ae serve --host 127.0.0.1 --port 8000 --config agent.yaml
+uv run ae serve --host 127.0.0.1 --port 8050 --config agent.yaml
 ```
 
 - 包代码:`app/`(`engine.py` 是唯一公共门面 `SkillEngine`)

@@ -8,6 +8,9 @@
 | --- | --- |
 | [../README.md](../README.md) | 项目定位、快速开始、API/CLI 入口 |
 | [命令速查.md](命令速查.md) | **短命令**：`uv run ae` / pytest / web |
+| [测试账号.md](测试账号.md) | **预置角色/账号**、登录与测试剧本 |
+| [账号与业务系统接入.md](账号与业务系统接入.md) | **账号权限系统边界**：三种接入模式 + Principal 契约 |
+| [../account-service/README.md](../account-service/README.md) | **独立账号服务**目录与启动 |
 | [../AGENTS.md](../AGENTS.md) | 目录归位、开发命令、工作守则 |
 | [VERSION_1.0.1.md](VERSION_1.0.1.md) | **本轮迭代定义**：范围、目标、验收、非目标 |
 | [架构文档_1.0.1.md](架构文档_1.0.1.md) | 当前架构 + 目标平台架构（本迭代基线） |

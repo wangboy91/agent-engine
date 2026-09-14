@@ -49,6 +49,7 @@ def get_engine(request: Request) -> SkillEngine:
 
 
 def get_principal(
+    authorization: str | None = Header(default=None, alias="Authorization"),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
     x_principal_id: str | None = Header(default=None, alias="X-Principal-Id"),
     x_principal_type: str | None = Header(default=None, alias="X-Principal-Type"),
@@ -57,18 +58,27 @@ def get_principal(
     x_group_ids: str | None = Header(default=None, alias="X-Group-Ids"),
     x_scopes: str | None = Header(default=None, alias="X-Scopes"),
 ) -> Principal:
-    # Dev/test principal provider. Production OIDC replaces this dependency.
-    if not x_tenant_id or not x_principal_id:
-        raise HTTPException(status_code=401, detail="Principal headers required")
-    return Principal(
-        tenant_id=x_tenant_id,
-        principal_id=x_principal_id,
-        principal_type=(x_principal_type or "user"),  # type: ignore[arg-type]
-        display_name=x_display_name,
-        workspace_roles=_split_csv(x_workspace_roles),
-        group_ids=_split_csv(x_group_ids),
-        scopes=_split_csv(x_scopes),
-    )
+    # 1) Prefer Bearer dev token from POST /api/v1/auth/login
+    if authorization and authorization.lower().startswith("bearer "):
+        token = authorization.split(" ", 1)[1].strip()
+        from app.application.platform.auth_demo import parse_dev_token
+
+        principal = parse_dev_token(token)
+        if principal is not None:
+            return principal
+
+    # 2) Dev header principal provider (tests / curl). Production OIDC replaces this.
+    if x_tenant_id and x_principal_id:
+        return Principal(
+            tenant_id=x_tenant_id,
+            principal_id=x_principal_id,
+            principal_type=(x_principal_type or "user"),  # type: ignore[arg-type]
+            display_name=x_display_name,
+            workspace_roles=_split_csv(x_workspace_roles),
+            group_ids=_split_csv(x_group_ids),
+            scopes=_split_csv(x_scopes),
+        )
+    raise HTTPException(status_code=401, detail="Principal required (login or headers)")
 
 
 class CreateTenantRequest(BaseModel):

@@ -17,6 +17,7 @@ import { OverviewPage } from "./pages/OverviewPage";
 import { RunsPage } from "./pages/RunsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SkillsPage } from "./pages/SkillsPage";
+import { LoginPage } from "./pages/LoginPage";
 import { WorkbenchChatPage } from "./pages/WorkbenchChatPage";
 import { WorkbenchHomePage } from "./pages/WorkbenchHomePage";
 
@@ -78,6 +79,8 @@ export default function App() {
   const isConsole = principal.mode === "console";
 
   const consoleNav = [
+    { section: "账号" },
+    { to: "/login", label: "登录（账号服务）", show: true },
     { section: "概览" },
     { to: "/console/overview", label: "总览", show: true },
     { section: "业务" },
@@ -183,7 +186,8 @@ export default function App() {
 
           <main className="main">
             <Routes>
-              <Route path="/" element={<Navigate to="/console/overview" replace />} />
+              <Route path="/" element={<Navigate to="/login" replace />} />
+              <Route path="/login" element={<LoginPage />} />
               <Route path="/console" element={<Navigate to="/console/overview" replace />} />
               <Route path="/console/overview" element={<OverviewPage />} />
               <Route path="/console/agents" element={<AgentsPage />} />

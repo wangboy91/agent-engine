@@ -1,8 +1,12 @@
 models:
-  # Change this to mimo_anthropic to use the Anthropic-compatible endpoint.
-  active_profile: mimo
+  # Local/dev default: mock. Switch to mimo for real providers.
+  active_profile: mock
 
   profiles:
+    mock:
+      protocol: mock
+      model: mock-tool-calling
+
     mimo:
       protocol: openai-compatible
       base_url: ${OPENAI_COMPATIBLE_BASE_URL}

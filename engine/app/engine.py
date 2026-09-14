@@ -69,6 +69,7 @@ class SkillEngine:
         | JsonPlatformRegistryStore
         | PostgresPlatformRegistryStore
         | None = None,
+        auth_store: object | None = None,
     ) -> None:
         self.skill_registry = skill_registry
         self.tool_registry = tool_registry
@@ -84,6 +85,7 @@ class SkillEngine:
         self.secret_store = secret_store or InMemorySecretStore()
         self.catalog_store = catalog_store
         self.platform_registry = platform_registry or InMemoryPlatformRegistryStore()
+        self.auth_store = auth_store
         self.runtime = SkillRuntime(
             skill_registry=skill_registry,
             tool_registry=tool_registry,
@@ -129,6 +131,9 @@ class SkillEngine:
             session_store = JsonAgentSessionStore(session_path or state_dir / "sessions.json")
             run_store = JsonRunStore(run_path or state_dir / "runs.json")
             trace_store = JsonTraceStore(trace_path or state_dir / "traces.json")
+        from app.infrastructure.persistence.auth_store_pg import create_auth_store
+
+        auth_store = create_auth_store()
         engine = cls(
             skill_registry=InMemorySkillRegistry(),
             tool_registry=InMemoryToolRegistry(),
@@ -144,6 +149,7 @@ class SkillEngine:
             secret_store=secret_store,
             catalog_store=catalog_store,
             platform_registry=platform_registry,
+            auth_store=auth_store,
         )
         engine.load_catalog()
         return engine

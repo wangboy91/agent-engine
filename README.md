@@ -160,10 +160,10 @@ uv run ae skill register resources/skills/talking-video
 
 ```bash
 cd engine
-uv run ae serve --host 127.0.0.1 --port 8000 --config agent.yaml
+uv run ae serve --host 127.0.0.1 --port 8050 --config agent.yaml
 ```
 
-可访问 `http://127.0.0.1:8000/health` 检查健康状态。界面请使用 `web/`（`npm run dev` → `:5173`）。`gateway` 与 `serve` 当前都启动同一 FastAPI 应用；前者只是为网关部署场景保留的 CLI 别名。
+可访问 `http://127.0.0.1:8050/health` 检查健康状态。界面请使用 `web/`（`npm run dev` → `:5001`）。`gateway` 与 `serve` 当前都启动同一 FastAPI 应用；前者只是为网关部署场景保留的 CLI 别名。
 
 ## 配置真实模型
 
@@ -333,9 +333,20 @@ ae workspace scan demo --identity-id alice
 | 审批 | `GET /tool-approvals`、`POST /tool-approvals/{approval_id}/approve`、`.../deny` |
 | **1.0.1 平台 API** | `/api/v1/tenants...` 管理；`/api/v1/me/identities|sessions|runs|artifacts` 员工隔离 API |
 
-### 1.0.1 `/api/v1` 与 Principal（开发鉴权桩）
+### 1.0.1 `/api/v1` 与 Principal（开发鉴权）
 
-平台与员工 API 依赖请求头 Principal（生产将替换为 OIDC）：
+**推荐：** 使用预置账号登录（见 [测试账号](docs/测试账号.md)）：
+
+```bash
+curl -s -X POST http://127.0.0.1:8050/api/v1/auth/login \
+  -H 'content-type: application/json' \
+  -d '{"username":"ws.admin","password":"Ws@123"}'
+
+# 之后请求携带
+# Authorization: Bearer <access_token>
+```
+
+也兼容请求头 Principal 桩（自动化测试）：
 
 ```text
 X-Tenant-Id: t-demo
@@ -347,14 +358,14 @@ X-Group-Ids: all-staff
 
 ```bash
 # 创建租户 / 工作空间 / Identity 并发布授权（管理）
-curl -X POST http://127.0.0.1:8000/api/v1/tenants \
+curl -X POST http://127.0.0.1:8050/api/v1/tenants \
   -H 'content-type: application/json' \
   -H 'X-Tenant-Id: t-demo' -H 'X-Principal-Id: admin' \
   -H 'X-Workspace-Roles: tenant_admin,ws_admin' \
   -d '{"tenant_id":"t-demo","name":"Demo"}'
 
 # 员工只读已授权智能体
-curl http://127.0.0.1:8000/api/v1/me/identities \
+curl http://127.0.0.1:8050/api/v1/me/identities \
   -H 'X-Tenant-Id: t-demo' -H 'X-Principal-Id: u_alice'
 ```
 
@@ -366,21 +377,21 @@ curl http://127.0.0.1:8000/api/v1/me/identities \
 ```bash
 # 终端 1：引擎 API
 cd engine
-uv run ae serve --host 127.0.0.1 --port 8000 --config agent.yaml
+uv run ae serve --host 127.0.0.1 --port 8050 --config agent.yaml
 
 # 终端 2：前端
 cd web
 npm install
-npm run dev   # http://127.0.0.1:5173
+npm run dev   # http://127.0.0.1:5001
 ```
 
-开发代理将 `/api` 转发到 `127.0.0.1:8000`。设计稿见 `prototype/web/`，契约见 `docs/api/openapi.json`。
+开发代理将 `/api` 转发到 `127.0.0.1:8050`。设计稿见 `prototype/web/`，契约见 `docs/api/openapi.json`。
 
 直接运行 Skill：
 
 ```bash
 cd engine
-curl -X POST http://127.0.0.1:8000/skills/talking-video/runs \
+curl -X POST http://127.0.0.1:8050/skills/talking-video/runs \
   -H 'content-type: application/json' \
   -d '{"input":{"topic":"程序员护眼台灯","duration_seconds":60}}'
 ```
@@ -389,7 +400,7 @@ curl -X POST http://127.0.0.1:8000/skills/talking-video/runs \
 
 ```bash
 cd engine
-curl -X POST http://127.0.0.1:8000/chat/messages \
+curl -X POST http://127.0.0.1:8050/chat/messages \
   -H 'content-type: application/json' \
   -d '{"message":"生成 60 秒程序员护眼台灯口播视频"}'
 ```

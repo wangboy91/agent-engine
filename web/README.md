@@ -7,16 +7,16 @@
 ```bash
 # 1) 启动引擎 API（engine/ 目录）
 cd engine
-uv run ae serve --host 127.0.0.1 --port 8000 --config agent.yaml
+uv run ae serve --host 127.0.0.1 --port 8050 --config agent.yaml
 
 # 2) 启动前端
 cd web
 npm install
 npm run dev
-# http://127.0.0.1:5173
+# http://127.0.0.1:5001
 ```
 
-开发代理见 `vite.config.ts`（`/api` → `127.0.0.1:8000`）。
+开发代理见 `vite.config.ts`（`/api` → `127.0.0.1:8050`）。
 
 ## Principal（开发鉴权桩）
 
